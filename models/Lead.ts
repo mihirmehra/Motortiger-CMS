@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema, Types, model, models } from 'mongoose';
 
 export type LeadStatus = 
   | 'New' 
@@ -11,7 +11,7 @@ export type LeadStatus =
   | 'Sale Payment Done'
   | 'Sale Closed';
 
-export interface ILead extends Document {
+export interface ILead {
   leadId: string;
   leadNumber: string;
   date: Date;
@@ -25,7 +25,7 @@ export interface ILead extends Document {
   customerEmail: string;
   status: LeadStatus;
   orderStatus?: string;
-  assignedAgent: string;
+  assignedAgent: Types.ObjectId;
   billingAddress?: string;
   shippingAddress?: string;
   mechanicName?: string;
@@ -71,12 +71,12 @@ export interface ILead extends Document {
   arn?: string;
   refundCredited?: number;
   chargebackAmount?: number;
-  createdBy: string;
-  updatedBy: string;
+  createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
   history: Array<{
     action: string;
     changes: object;
-    performedBy: string;
+    performedBy: Types.ObjectId;
     timestamp: Date;
     notes?: string;
   }>;
@@ -164,7 +164,7 @@ const LeadSchema = new Schema<ILead>({
 });
 
 // Calculate total margin automatically
-LeadSchema.pre('save', function(next) {
+LeadSchema.pre('save', function (this: any, next) {
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
   }
@@ -178,4 +178,4 @@ LeadSchema.index({ assignedAgent: 1 });
 LeadSchema.index({ customerEmail: 1 });
 LeadSchema.index({ createdAt: -1 });
 
-export default mongoose.models.Lead || mongoose.model<ILead>('Lead', LeadSchema);
+export default models.Lead || model<ILead>('Lead', LeadSchema);
