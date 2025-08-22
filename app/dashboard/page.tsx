@@ -81,7 +81,7 @@ export default function Dashboard() {
               Welcome back, {user?.name || 'User'}!
             </h1>
             <p className="text-gray-600">
-              Here's an overview of your auto parts management system.
+              Here is an overview of your auto parts management system.
             </p>
           </div>
           <div className="text-right">

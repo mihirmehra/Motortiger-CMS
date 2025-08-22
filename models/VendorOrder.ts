@@ -46,8 +46,8 @@ export interface IVendorOrder {
   shippingCompany?: string;
   modeOfPayment?: string;
   fedexTracking?: string;
-  createdBy: Types.ObjectId; // Use Types.ObjectId
-  updatedBy: Types.ObjectId; // Use Types.ObjectId
+  createdBy: Types.ObjectId | string; // Use Types.ObjectId
+  updatedBy: Types.ObjectId | string; // Use Types.ObjectId
 }
 
 // 3. Define the schema

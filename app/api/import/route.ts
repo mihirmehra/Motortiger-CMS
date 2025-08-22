@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const module = formData.get('module') as string;
+    const modules = formData.get('module') as string;
 
-    if (!file || !module) {
+    if (!file || !modules) {
       return NextResponse.json({ error: 'File and module are required' }, { status: 400 });
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     let invalidData: any[] = [];
     let importedCount = 0;
 
-    switch (module) {
+    switch (modules) {
       case 'leads':
         const leadValidation = ImportService.validateLeadData(data);
         validData = leadValidation.valid;
