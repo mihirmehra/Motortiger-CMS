@@ -5,7 +5,7 @@ export const userRegistrationSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'manager', 'agent']),
-  assignedTo: z.string().optional().transform(val => val === '' ? undefined : val)
+  assignedTo: z.string().optional()
 });
 
 export const loginSchema = z.object({
@@ -17,12 +17,19 @@ export const leadSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required'),
   phoneNumber: z.string().min(10, 'Valid phone number required'),
   customerEmail: z.string().email('Invalid email format'),
-  status: z.enum([
-    'New', 'Connected', 'Nurturing', 'Waiting for respond',
-    'Customer Waiting for respond', 'Payment Under Process',
-    'Customer making payment', 'Sale Payment Done', 'Sale Closed'
-  ]).optional(),
-  assignedAgent: z.string().optional()
+  alternateNumber: z.string().optional(),
+  status: z.string().optional(),
+  assignedAgent: z.string().optional(),
+  productName: z.string().optional(),
+  productAmount: z.number().optional(),
+  quantity: z.number().optional(),
+  billingAddress: z.string().optional(),
+  shippingAddress: z.string().optional(),
+  mechanicName: z.string().optional(),
+  contactPhone: z.string().optional(),
+  state: z.string().optional(),
+  zone: z.string().optional(),
+  callType: z.string().optional()
 });
 
 export const vendorOrderSchema = z.object({

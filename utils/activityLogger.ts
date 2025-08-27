@@ -7,7 +7,7 @@ export interface LogActivityParams {
   userName: string;
   userRole: string;
   action: 'create' | 'read' | 'update' | 'delete' | 'login' | 'logout' | 'register' | 'import' | 'export';
-  module: 'leads' | 'vendor_orders' | 'targets' | 'sales' | 'payment_records' | 'users' | 'auth';
+  module: 'leads' | 'vendor_orders' | 'targets' | 'sales' | 'followups' | 'payment_records' | 'users' | 'auth';
   description: string;
   targetId?: string;
   targetType?: string;
@@ -60,6 +60,7 @@ export function getChangeDescription(action: string, module: string, targetName?
     vendor_orders: 'Vendor Order',
     targets: 'Target',
     sales: 'Sale',
+    followups: 'Follow-up',
     payment_records: 'Payment Record',
     users: 'User',
     auth: 'Authentication'

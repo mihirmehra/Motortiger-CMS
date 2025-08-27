@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types, model, models } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
 export type LeadStatus = 
   | 'New' 
@@ -6,12 +6,15 @@ export type LeadStatus =
   | 'Nurturing' 
   | 'Waiting for respond' 
   | 'Customer Waiting for respond'
+  | 'Follow up'
+  | 'Desision Follow up'
+  | 'Payment Follow up'
   | 'Payment Under Process'
   | 'Customer making payment'
   | 'Sale Payment Done'
   | 'Sale Closed';
 
-export interface ILead {
+export interface ILead extends Document {
   leadId: string;
   leadNumber: string;
   date: Date;
@@ -25,7 +28,7 @@ export interface ILead {
   customerEmail: string;
   status: LeadStatus;
   orderStatus?: string;
-  assignedAgent: Types.ObjectId;
+  assignedAgent: string;
   billingAddress?: string;
   shippingAddress?: string;
   mechanicName?: string;
@@ -71,12 +74,12 @@ export interface ILead {
   arn?: string;
   refundCredited?: number;
   chargebackAmount?: number;
-  createdBy: Types.ObjectId;
-  updatedBy: Types.ObjectId;
+  createdBy: string;
+  updatedBy: string;
   history: Array<{
     action: string;
     changes: object;
-    performedBy: Types.ObjectId;
+    performedBy: string;
     timestamp: Date;
     notes?: string;
   }>;
@@ -98,7 +101,8 @@ const LeadSchema = new Schema<ILead>({
     type: String,
     enum: [
       'New', 'Connected', 'Nurturing', 'Waiting for respond',
-      'Customer Waiting for respond', 'Payment Under Process',
+      'Customer Waiting for respond', 'Follow up', 'Desision Follow up',
+      'Payment Follow up', 'Payment Under Process',
       'Customer making payment', 'Sale Payment Done', 'Sale Closed'
     ],
     default: 'New'
@@ -164,7 +168,7 @@ const LeadSchema = new Schema<ILead>({
 });
 
 // Calculate total margin automatically
-LeadSchema.pre('save', function (this: any, next) {
+LeadSchema.pre('save', function(next) {
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
   }
@@ -178,4 +182,4 @@ LeadSchema.index({ assignedAgent: 1 });
 LeadSchema.index({ customerEmail: 1 });
 LeadSchema.index({ createdAt: -1 });
 
-export default models.Lead || model<ILead>('Lead', LeadSchema);
+export default mongoose.models.Lead || mongoose.model<ILead>('Lead', LeadSchema);
