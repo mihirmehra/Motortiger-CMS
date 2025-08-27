@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IActivityHistory extends Document {
   activityId: string;
-  userId: string;
+  userId: mongoose.Types.ObjectId;
   userName: string;
   userRole: string;
   action: string;

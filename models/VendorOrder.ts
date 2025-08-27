@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type OrderStatus = 
   | 'stage1 (engine pull)'
@@ -8,7 +8,7 @@ export type OrderStatus =
   | 'stage5 (shipping)'
   | 'stage6 (delivered)';
 
-export interface IVendorOrder extends Document {
+export interface IVendorOrder {
   date: Date;
   vendorId: string;
   vendorName: string;
@@ -44,8 +44,8 @@ export interface IVendorOrder extends Document {
   shippingCompany?: string;
   modeOfPayment?: string;
   fedexTracking?: string;
-  createdBy: string;
-  updatedBy: string;
+  createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
 }
 
 const VendorOrderSchema = new Schema<IVendorOrder>({

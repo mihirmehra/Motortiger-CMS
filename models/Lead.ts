@@ -14,7 +14,7 @@ export type LeadStatus =
   | 'Sale Payment Done'
   | 'Sale Closed';
 
-export interface ILead extends Document {
+export interface ILead {
   leadId: string;
   leadNumber: string;
   date: Date;
@@ -28,7 +28,7 @@ export interface ILead extends Document {
   customerEmail: string;
   status: LeadStatus;
   orderStatus?: string;
-  assignedAgent: string;
+  assignedAgent: string | mongoose.Types.ObjectId;
   billingAddress?: string;
   shippingAddress?: string;
   mechanicName?: string;
@@ -74,8 +74,8 @@ export interface ILead extends Document {
   arn?: string;
   refundCredited?: number;
   chargebackAmount?: number;
-  createdBy: string;
-  updatedBy: string;
+  createdBy: string | mongoose.Types.ObjectId;
+  updatedBy: string | mongoose.Types.ObjectId;
   history: Array<{
     action: string;
     changes: object;

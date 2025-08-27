@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IFollowup extends Document {
   followupId: string;
-  leadId: string;
+  leadId: mongoose.Types.ObjectId;
   leadNumber: string;
   customerName: string;
   customerEmail: string;
@@ -10,14 +10,14 @@ export interface IFollowup extends Document {
   productName?: string;
   salesPrice?: number;
   status: 'Follow up' | 'Desision Follow up' | 'Payment Follow up';
-  assignedAgent: string;
+  assignedAgent: mongoose.Types.ObjectId;
   dateCreated: Date;
   isDone: boolean;
   completedDate?: Date;
-  completedBy?: string;
+  completedBy?: mongoose.Types.ObjectId;
   notes: string[];
-  createdBy: string;
-  updatedBy: string;
+  createdBy: mongoose.Types.ObjectId;
+  updatedBy: mongoose.Types.ObjectId;
 }
 
 const FollowupSchema = new Schema<IFollowup>({
