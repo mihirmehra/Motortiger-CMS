@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       leadId: generateUniqueId('LEAD_'),
       leadNumber: generateLeadNumber(),
       month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-      assignedAgent: body.assignedAgent || user.id,
+      assignedAgent: getAssignedAgent(body.assignedAgent, user),
       createdBy: user.id,
       updatedBy: user.id,
       history: [{
@@ -165,4 +165,32 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function getAssignedAgent(requestedAgent: string, currentUser: any): string {
+  // If no agent specified, assign to current user
+  if (!requestedAgent) {
+    return currentUser.id;
+  }
+
+  // Admin can assign to anyone
+  if (currentUser.role === 'admin') {
+    return requestedAgent;
+  }
+
+  // Manager can assign to themselves or their assigned agents
+  if (currentUser.role === 'manager') {
+    if (requestedAgent === currentUser.id) {
+      return requestedAgent;
+    }
+    // Check if requested agent is in manager's assigned agents
+    if (currentUser.assignedAgents && currentUser.assignedAgents.includes(requestedAgent)) {
+      return requestedAgent;
+    }
+    // If not valid, assign to manager themselves
+    return currentUser.id;
+  }
+
+  // Agents can only assign to themselves
+  return currentUser.id;
 }

@@ -25,9 +25,9 @@ export class PermissionManager {
       case 'admin':
         return true;
       case 'manager':
-        return ['leads', 'vendor_orders', 'targets', 'sales', 'payment_records', 'users'].includes(module);
+        return ['leads', 'vendor_orders', 'targets', 'sales', 'followups', 'payment_records', 'users'].includes(module);
       case 'agent':
-        return ['leads', 'vendor_orders', 'payment_records'].includes(module);
+        return ['leads', 'vendor_orders', 'followups', 'payment_records'].includes(module);
       default:
         return false;
     }
@@ -38,9 +38,9 @@ export class PermissionManager {
       case 'admin':
         return true;
       case 'manager':
-        return ['leads', 'vendor_orders', 'targets', 'sales', 'payment_records', 'users'].includes(module);
+        return ['leads', 'vendor_orders', 'targets', 'sales', 'followups', 'payment_records', 'users'].includes(module);
       case 'agent':
-        return ['leads', 'vendor_orders', 'payment_records'].includes(module);
+        return ['leads', 'vendor_orders', 'followups', 'payment_records'].includes(module);
       default:
         return false;
     }

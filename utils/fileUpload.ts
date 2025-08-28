@@ -40,7 +40,7 @@ export async function handleFileUpload(
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
-      await writeFile(filePath, new Uint8Array(buffer));
+      await writeFile(filePath, buffer);
 
       uploadedFiles.push({
         fileId,

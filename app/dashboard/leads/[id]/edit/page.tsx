@@ -66,18 +66,21 @@ interface User {
   _id: string;
   name: string;
   email: string;
+  role: string;
 }
 
 export default function EditLeadPage() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  const [agents, setAgents] = useState<User[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentAssignedUser, setCurrentAssignedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<Partial<Lead>>({});
   const router = useRouter();
   const params = useParams();
 
   const statusOptions = [
-    'New', 'Connected', 'Nurturing', 'Waiting for respond',
+    'New', 'Connected', 'Nurturing', 'Waiting for respond', 'Follow up', 'Desision Follow up', 'Payment Follow up',
     'Customer Waiting for respond', 'Payment Under Process',
     'Customer making payment', 'Sale Payment Done', 'Sale Closed'
   ];
@@ -85,11 +88,17 @@ export default function EditLeadPage() {
   const paymentPortalOptions = ['EasyPayDirect', 'Authorize.net'];
 
   useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+  }, []);
+
+  useEffect(() => {
     if (params.id) {
       loadLead();
-      loadAgents();
     }
-  }, [params.id]);
+  }, [params.id, currentUser]);
 
   const loadLead = async () => {
     try {
@@ -102,6 +111,7 @@ export default function EditLeadPage() {
 
       if (response.ok) {
         const data = await response.json();
+        setCurrentAssignedUser(data.lead.assignedAgent);
         setFormData({
           ...data.lead,
           assignedAgent: data.lead.assignedAgent._id,
@@ -111,6 +121,11 @@ export default function EditLeadPage() {
           disputeDate: data.lead.disputeDate ? new Date(data.lead.disputeDate).toISOString().split('T')[0] : '',
           refundDate: data.lead.refundDate ? new Date(data.lead.refundDate).toISOString().split('T')[0] : ''
         });
+        
+        // Load available users after we know current user role
+        if (currentUser) {
+          loadAvailableUsers(currentUser);
+        }
       } else {
         console.error('Failed to load lead');
         router.push('/dashboard/leads');
@@ -123,10 +138,21 @@ export default function EditLeadPage() {
     }
   };
 
-  const loadAgents = async () => {
+  const loadAvailableUsers = async (user: User) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/users?role=agent', {
+      
+      let url = '/api/users';
+      if (user.role === 'manager') {
+        // Managers can assign to themselves and their assigned agents
+        url = `/api/users/assignment-options?managerId=${user._id}`;
+      } else if (user.role === 'admin') {
+        // Admins can assign to managers and agents
+        url = '/api/users?role=manager,agent';
+      }
+      // Agents don't get options since they can only assign to themselves
+      
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -134,10 +160,10 @@ export default function EditLeadPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setAgents(data.users);
+        setAvailableUsers(data.users || []);
       }
     } catch (error) {
-      console.error('Failed to load agents:', error);
+      console.error('Failed to load available users:', error);
     }
   };
 
@@ -284,20 +310,37 @@ export default function EditLeadPage() {
 
                 <div>
                   <Label htmlFor="assignedAgent">Assigned Agent</Label>
+                  {currentAssignedUser && (
+                    <div className="mb-2 p-2 bg-blue-50 rounded text-sm">
+                      <span className="font-medium">Currently assigned to: </span>
+                      {currentAssignedUser.name} ({currentAssignedUser.email}) - {currentAssignedUser.role}
+                    </div>
+                  )}
                   <select
                     id="assignedAgent"
                     name="assignedAgent"
                     value={formData.assignedAgent || ''}
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={currentUser?.role === 'agent'}
                   >
-                    <option value="">Select Agent</option>
-                    {agents.map(agent => (
-                      <option key={agent._id} value={agent._id}>
-                        {agent.name} ({agent.email})
+                    {currentUser?.role !== 'agent' && <option value="">Keep current assignment</option>}
+                    {availableUsers.map(user => (
+                      <option key={user._id} value={user._id}>
+                        {user.name} ({user.email}) - {user.role}
                       </option>
                     ))}
                   </select>
+                  {currentUser?.role === 'agent' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      As an agent, you cannot reassign leads to other users
+                    </p>
+                  )}
+                  {currentUser?.role === 'manager' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      You can assign to yourself or your assigned agents only
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>

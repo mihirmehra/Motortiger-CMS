@@ -45,3 +45,9 @@ export function generateFileId(): string {
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
   return `FILE${timestamp.slice(-6)}${random}`;
 }
+
+export function generateFollowupId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `FU${timestamp.slice(-6)}${random}`;
+}
