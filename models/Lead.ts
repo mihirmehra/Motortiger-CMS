@@ -28,7 +28,11 @@ export interface ILead extends Document {
   customerEmail: string;
   status: LeadStatus;
   orderStatus?: string;
+<<<<<<< HEAD
   assignedAgent: string;
+=======
+  assignedAgent: string | mongoose.Types.ObjectId;
+>>>>>>> 9417930dcf7cbecdcc1e1f2aff48df8a6f088b0a
   billingAddress?: string;
   shippingAddress?: string;
   mechanicName?: string;
@@ -74,8 +78,13 @@ export interface ILead extends Document {
   arn?: string;
   refundCredited?: number;
   chargebackAmount?: number;
+<<<<<<< HEAD
   createdBy: string;
   updatedBy: string;
+=======
+  createdBy: string | mongoose.Types.ObjectId;
+  updatedBy: string | mongoose.Types.ObjectId;
+>>>>>>> 9417930dcf7cbecdcc1e1f2aff48df8a6f088b0a
   history: Array<{
     action: string;
     changes: object;
