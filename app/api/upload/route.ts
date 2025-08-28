@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
-    const modules = formData.get('module') as string;
+    const module = formData.get('module') as string;
     const targetId = formData.get('targetId') as string;
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    if (!modules) {
+    if (!module) {
       return NextResponse.json({ error: 'Module is required' }, { status: 400 });
     }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const uploadedFiles = await handleFileUpload(request, modules, targetId);
+    const uploadedFiles = await handleFileUpload(request, module, targetId);
 
     await connectDB();
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       const fileRecord = new FileUpload({
         ...uploadedFile,
         uploadedBy: user.id,
-        modules,
+        module,
         targetId
       });
       await fileRecord.save();
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
       userName: user.email,
       userRole: user.role,
       action: 'create',
-      module: modules as any,
-      description: `Uploaded ${files.length} file(s) to ${modules}`,
+      module: module as any,
+      description: `Uploaded ${files.length} file(s) to ${module}`,
       targetId,
       targetType: 'FileUpload',
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
@@ -98,11 +98,11 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const modules = searchParams.get('module');
+    const module = searchParams.get('module');
     const targetId = searchParams.get('targetId');
 
     const filter: any = { isActive: true };
-    if (modules) filter.modules = modules;
+    if (module) filter.module = module;
     if (targetId) filter.targetId = targetId;
 
     const files = await FileUpload.find(filter)

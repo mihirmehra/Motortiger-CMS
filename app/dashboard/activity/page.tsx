@@ -45,7 +45,7 @@ export default function ActivityHistoryPage() {
   const router = useRouter();
 
   const actionOptions = ['create', 'read', 'update', 'delete', 'login', 'logout', 'register', 'import', 'export'];
-  const moduleOptions = ['leads', 'vendor_orders', 'targets', 'sales', 'payment_records', 'users', 'auth'];
+  const moduleOptions = ['leads', 'vendor_orders', 'targets', 'sales', 'followups', 'payment_records', 'users', 'auth'];
 
   const getActionColor = (action: string) => {
     const colors: { [key: string]: string } = {

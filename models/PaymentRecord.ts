@@ -58,8 +58,8 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>({
     enum: ['pending', 'completed', 'failed', 'refunded', 'disputed'],
     default: 'pending'
   },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 }, {
   timestamps: true
 });

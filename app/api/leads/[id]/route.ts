@@ -3,9 +3,10 @@ import connectDB from '@/lib/dbConfig';
 import Lead from '@/models/Lead';
 import Sale from '@/models/Sale';
 import Target from '@/models/Target';
+import Followup from '@/models/Followup';
 import { verifyToken, extractTokenFromRequest } from '@/middleware/auth';
 import { PermissionManager } from '@/middleware/permissions';
-import { generateSaleId } from '@/utils/idGenerator';
+import { generateSaleId, generateFollowupId } from '@/utils/idGenerator';
 import { logActivity, getChangeDescription } from '@/utils/activityLogger';
 
 export async function GET(
@@ -81,6 +82,27 @@ export async function PUT(
     const body = await request.json();
     const oldValues = lead.toObject();
 
+    // Handle follow-up status changes
+    const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
+    if (followupStatuses.includes(body.status) && !followupStatuses.includes(lead.status)) {
+      // Create follow-up record
+      const followup = new Followup({
+        followupId: generateFollowupId(),
+        leadId: lead._id,
+        leadNumber: lead.leadNumber,
+        customerName: lead.customerName,
+        customerEmail: lead.customerEmail,
+        phoneNumber: lead.phoneNumber,
+        productName: lead.productName,
+        salesPrice: lead.salesPrice,
+        status: body.status,
+        assignedAgent: lead.assignedAgent,
+        createdBy: user.id,
+        updatedBy: user.id
+      });
+      await followup.save();
+    }
+
     // Handle status change to "Sale Payment Done"
     if (body.status === 'Sale Payment Done' && lead.status !== 'Sale Payment Done') {
       // Create sale record
@@ -125,7 +147,9 @@ export async function PUT(
       changes: body,
       performedBy: user.id,
       timestamp: new Date(),
-      notes: `Status changed from ${oldValues.status} to ${body.status}`
+      notes: body.status !== oldValues.status 
+        ? `Status changed from ${oldValues.status} to ${body.status}`
+        : 'Lead updated'
     });
 
     await lead.save();

@@ -24,7 +24,7 @@ class EmailService {
       }
     };
 
-    this.transporter = nodemailer.createTransport(config);
+    this.transporter = nodemailer.createTransporter(config);
   }
 
   async sendOrderConfirmation(to: string, orderDetails: any): Promise<boolean> {

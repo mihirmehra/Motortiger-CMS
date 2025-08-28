@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get('user-agent') || 'unknown'
     });
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${filename}.${fileExtension}"`,

@@ -17,7 +17,8 @@ interface User {
 
 export default function NewLeadPage() {
   const [loading, setLoading] = useState(false);
-  const [agents, setAgents] = useState<User[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -29,19 +30,35 @@ export default function NewLeadPage() {
   const router = useRouter();
 
   const statusOptions = [
-    'New', 'Connected', 'Nurturing', 'Waiting for respond',
+    'New', 'Connected', 'Nurturing', 'Waiting for respond', 'Follow up', 'Desision Follow up', 'Payment Follow up',
     'Customer Waiting for respond', 'Payment Under Process',
     'Customer making payment', 'Sale Payment Done', 'Sale Closed'
   ];
 
   useEffect(() => {
-    loadAgents();
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+      loadAvailableUsers(user);
+    }
   }, []);
 
-  const loadAgents = async () => {
+  const loadAvailableUsers = async (user: User) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/users?role=agent', {
+      
+      let url = '/api/users';
+      if (user.role === 'manager') {
+        // Managers can assign to themselves and their assigned agents
+        url = `/api/users/assignment-options?managerId=${user._id}`;
+      } else if (user.role === 'admin') {
+        // Admins can assign to managers and agents
+        url = '/api/users?role=manager,agent';
+      }
+      // Agents don't get options since they can only assign to themselves
+      
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -49,10 +66,10 @@ export default function NewLeadPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setAgents(data.users);
+        setAvailableUsers(data.users || []);
       }
     } catch (error) {
-      console.error('Failed to load agents:', error);
+      console.error('Failed to load available users:', error);
     }
   };
 
@@ -62,20 +79,32 @@ export default function NewLeadPage() {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Prepare data with proper type conversion
+      const submitData = {
+        customerName: formData.customerName,
+        customerEmail: formData.customerEmail,
+        phoneNumber: formData.phoneNumber,
+        alternateNumber: formData.alternateNumber || undefined,
+        status: formData.status,
+        assignedAgent: formData.assignedAgent || undefined
+      };
+      
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
       if (response.ok) {
         router.push('/dashboard/leads');
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to create lead');
+        console.error('Validation errors:', data.details);
+        alert(data.error || 'Failed to create lead. Please check all required fields.');
       }
     } catch (error) {
       console.error('Error creating lead:', error);
@@ -193,13 +222,18 @@ export default function NewLeadPage() {
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Select Agent</option>
-                    {agents.map(agent => (
-                      <option key={agent._id} value={agent._id}>
-                        {agent.name} ({agent.email})
+                    <option value="">Assign to me</option>
+                    {availableUsers.map(user => (
+                      <option key={user._id} value={user._id}>
+                        {user.name} ({user.email}) - {user.role}
                       </option>
                     ))}
                   </select>
+                  {currentUser?.role === 'agent' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      As an agent, leads will be assigned to you automatically
+                    </p>
+                  )}
                 </div>
               </div>
 

@@ -21,7 +21,6 @@ import {
   UserPlus,
   UserMinus
 } from 'lucide-react';
-import { Label } from '@/components/ui/label';
 
 interface User {
   _id: string;
@@ -69,8 +68,8 @@ export default function AssignAgentsPage() {
     try {
       const token = localStorage.getItem('token');
       
-      // Load managers with their assigned agents
-      const managersResponse = await fetch('/api/users?role=manager', {
+      // Load managers with their assigned agents using dedicated endpoint
+      const managersResponse = await fetch('/api/users/managers-with-agents', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -83,25 +82,7 @@ export default function AssignAgentsPage() {
         const managersData = await managersResponse.json();
         const agentsData = await agentsResponse.json();
         
-        // Load each manager's assigned agents
-        const managersWithAgents = await Promise.all(
-          managersData.users.map(async (manager: any) => {
-            try {
-              const agentsResponse = await fetch(`/api/users?assignedBy=${manager._id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              if (agentsResponse.ok) {
-                const agentsData = await agentsResponse.json();
-                return { ...manager, assignedAgents: agentsData.users };
-              }
-            } catch (error) {
-              console.error('Error loading agents for manager:', error);
-            }
-            return { ...manager, assignedAgents: [] };
-          })
-        );
-        
-        setManagers(managersWithAgents);
+        setManagers(managersData.managers);
         setUnassignedAgents(agentsData.agents);
       }
     } catch (error) {

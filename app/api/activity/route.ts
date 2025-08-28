@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
     const action = searchParams.get('action') || '';
-    const modules = searchParams.get('module') || '';
+    const module = searchParams.get('module') || '';
     const userId = searchParams.get('userId') || '';
 
     const skip = (page - 1) * limit;
@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
       filter.action = action;
     }
 
-    if (modules) {
-      filter.modules = modules;
+    if (module) {
+      filter.module = module;
     }
 
     if (userId) {

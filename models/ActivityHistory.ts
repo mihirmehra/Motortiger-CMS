@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IActivityHistory extends Document {
   activityId: string;
-  userId: mongoose.Types.ObjectId | string;
+  userId: mongoose.Types.ObjectId;
   userName: string;
   userRole: string;
   action: string;
@@ -28,7 +28,7 @@ const ActivityHistorySchema = new Schema<IActivityHistory>({
   },
   module: {
     type: String,
-    enum: ['leads', 'vendor_orders', 'targets', 'sales', 'payment_records', 'users', 'auth'],
+    enum: ['leads', 'vendor_orders', 'targets', 'sales', 'followups', 'payment_records', 'users', 'auth'],
     required: true
   },
   targetId: String,
