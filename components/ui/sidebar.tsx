@@ -138,7 +138,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-auto">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">

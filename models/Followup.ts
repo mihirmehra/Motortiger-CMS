@@ -2,7 +2,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IFollowup extends Document {
   followupId: string;
+<<<<<<< HEAD
   leadId: string;
+=======
+  leadId: mongoose.Types.ObjectId;
+>>>>>>> ff4abdcc4f9f8c495fd00ba867bb8a32d261d0cc
   leadNumber: string;
   customerName: string;
   customerEmail: string;
@@ -10,6 +14,7 @@ export interface IFollowup extends Document {
   productName?: string;
   salesPrice?: number;
   status: 'Follow up' | 'Desision Follow up' | 'Payment Follow up';
+<<<<<<< HEAD
   assignedAgent: string;
   dateCreated: Date;
   isDone: boolean;
@@ -18,6 +23,16 @@ export interface IFollowup extends Document {
   notes: string[];
   createdBy: string;
   updatedBy: string;
+=======
+  assignedAgent: mongoose.Types.ObjectId;
+  dateCreated: Date;
+  isDone: boolean;
+  completedDate?: Date;
+  completedBy?: mongoose.Types.ObjectId;
+  notes: string[];
+  createdBy: mongoose.Types.ObjectId;
+  updatedBy: mongoose.Types.ObjectId;
+>>>>>>> ff4abdcc4f9f8c495fd00ba867bb8a32d261d0cc
 }
 
 const FollowupSchema = new Schema<IFollowup>({
