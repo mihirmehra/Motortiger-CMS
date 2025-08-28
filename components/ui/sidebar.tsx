@@ -146,7 +146,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             <Car className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">AutoParts CMS</h1>
+            <h1 className="text-xl font-bold text-gray-900">Motortiger CMS</h1>
             <p className="text-sm text-gray-500">Management System</p>
           </div>
         </div>
