@@ -1,9 +1,9 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPaymentRecord extends Document {
   paymentId: string;
-  leadId?: Types.ObjectId;
-  customerId?: Types.ObjectId;
+  leadId?: string;
+  customerId?: string;
   customerName: string;
   modeOfPayment: string;
   paymentPortal?: 'EasyPayDirect' | 'Authorize.net';
@@ -25,8 +25,8 @@ export interface IPaymentRecord extends Document {
   refundCredited?: number;
   chargebackAmount?: number;
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded' | 'disputed';
-  createdBy: Types.ObjectId;
-  updatedBy: Types.ObjectId;
+  createdBy: string;
+  updatedBy: string;
 }
 
 const PaymentRecordSchema = new Schema<IPaymentRecord>({

@@ -7,7 +7,15 @@ export interface IFileUpload extends Document {
   filePath: string;
   fileSize: number;
   mimeType: string;
+<<<<<<< HEAD
   uploadedBy: mongoose.Types.ObjectId;
+=======
+<<<<<<< HEAD
+  uploadedBy: string;
+=======
+  uploadedBy: mongoose.Types.ObjectId;
+>>>>>>> ff4abdcc4f9f8c495fd00ba867bb8a32d261d0cc
+>>>>>>> 262de235504cccb3b9dd42b5dee8900458aa5910
   module: string;
   targetId?: string;
   isActive: boolean;

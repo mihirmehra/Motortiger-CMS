@@ -11,8 +11,8 @@ export interface ITarget extends Document {
   endDate: Date;
   assignedUsers: mongoose.Types.ObjectId[];
   isActive: boolean;
-  createdBy: mongoose.Types.ObjectId;
-  updatedBy: mongoose.Types.ObjectId;
+  createdBy: string;
+  updatedBy: string;
 }
 
 const TargetSchema = new Schema<ITarget>({

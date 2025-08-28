@@ -1,7 +1,15 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface ISale extends Document {
+<<<<<<< HEAD
   leadId: Types.ObjectId;
+=======
+<<<<<<< HEAD
+  leadId: string;
+=======
+  leadId: Types.ObjectId;
+>>>>>>> ff4abdcc4f9f8c495fd00ba867bb8a32d261d0cc
+>>>>>>> 262de235504cccb3b9dd42b5dee8900458aa5910
   saleId: string;
   customerName: string;
   customerEmail: string;
@@ -15,10 +23,24 @@ export interface ISale extends Document {
   deliveryConfirmationSent: boolean;
   deliveryConfirmationDate?: Date;
   status: 'pending' | 'in_progress' | 'completed';
+<<<<<<< HEAD
   assignedAgent: Types.ObjectId;
   notes: string[];
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
+=======
+<<<<<<< HEAD
+  assignedAgent: string;
+  notes: string[];
+  createdBy: string;
+  updatedBy: string;
+=======
+  assignedAgent: Types.ObjectId;
+  notes: string[];
+  createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
+>>>>>>> ff4abdcc4f9f8c495fd00ba867bb8a32d261d0cc
+>>>>>>> 262de235504cccb3b9dd42b5dee8900458aa5910
 }
 
 const SaleSchema = new Schema<ISale>({
