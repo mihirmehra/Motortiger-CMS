@@ -24,7 +24,7 @@ const UserSchema = new Schema<IUser>({
     required: true 
   },
   assignedAgents: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-  assignedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   isActive: { type: Boolean, default: true },
   lastLogin: Date
 }, {

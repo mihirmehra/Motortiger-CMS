@@ -44,7 +44,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (role) {
-      filter.role = role;
+      // Handle multiple roles separated by comma
+      const roles = role.split(',');
+      if (roles.length > 1) {
+        filter.role = { $in: roles };
+      } else {
+        filter.role = role;
+      }
     }
 
     if (assignedBy) {
@@ -104,6 +110,7 @@ export async function POST(request: NextRequest) {
     if (!permissions.canCreate('users')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
+    
     const body = await request.json();
     const validation = validateData(userRegistrationSchema, body);
 
@@ -140,9 +147,7 @@ export async function POST(request: NextRequest) {
     const userData = {
       ...validation.data!,
       password: hashedPassword,
-      assignedBy: body.role === 'agent' && user.role === 'manager' 
-        ? user.id 
-        : (body.assignedTo && body.assignedTo.trim() !== '' ? body.assignedTo : undefined)
+      assignedBy: body.role === 'agent' && user.role === 'manager' ? user.id : body.assignedTo
     };
 
     const newUser = new User(userData);
@@ -157,7 +162,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If admin is creating an agent and assignedTo is provided
-    if (body.role === 'agent' && user.role === 'admin' && body.assignedTo && body.assignedTo.trim() !== '') {
+    if (body.role === 'agent' && user.role === 'admin' && body.assignedTo) {
       await User.findByIdAndUpdate(
         body.assignedTo,
         { $addToSet: { assignedAgents: newUser._id } }

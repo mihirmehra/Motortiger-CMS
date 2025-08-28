@@ -276,7 +276,7 @@ export default function UserDetailPage() {
                       <li>• CRUD (No Delete) on business modules</li>
                       <li>• Limited user management</li>
                       <li>• Import/Export business modules</li>
-                      <li>• Access to own + assigned agents data</li>
+                      <li>• Access to own + assigned agents' data</li>
                     </ul>
                   </div>
                 )}

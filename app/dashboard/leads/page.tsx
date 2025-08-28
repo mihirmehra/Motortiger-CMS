@@ -53,7 +53,7 @@ export default function LeadsPage() {
   const router = useRouter();
 
   const statusOptions = [
-    'New', 'Connected', 'Nurturing', 'Waiting for respond',
+    'New', 'Connected', 'Nurturing', 'Waiting for respond', 'Follow up', 'Desision Follow up', 'Payment Follow up',
     'Customer Waiting for respond', 'Payment Under Process',
     'Customer making payment', 'Sale Payment Done', 'Sale Closed'
   ];
@@ -65,6 +65,9 @@ export default function LeadsPage() {
       'Nurturing': 'bg-yellow-100 text-yellow-800',
       'Waiting for respond': 'bg-orange-100 text-orange-800',
       'Customer Waiting for respond': 'bg-purple-100 text-purple-800',
+      'Follow up': 'bg-blue-100 text-blue-800',
+      'Desision Follow up': 'bg-orange-100 text-orange-800',
+      'Payment Follow up': 'bg-purple-100 text-purple-800',
       'Payment Under Process': 'bg-indigo-100 text-indigo-800',
       'Customer making payment': 'bg-pink-100 text-pink-800',
       'Sale Payment Done': 'bg-emerald-100 text-emerald-800',
@@ -293,14 +296,14 @@ export default function LeadsPage() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          {/* <Button
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(lead._id)}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </Button> */}
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

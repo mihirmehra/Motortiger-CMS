@@ -21,16 +21,16 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const modules = searchParams.get('module');
+    const module = searchParams.get('module');
 
-    if (!modules) {
+    if (!module) {
       return NextResponse.json({ error: 'Module is required' }, { status: 400 });
     }
 
     let sampleData: any[] = [];
     let filename = '';
 
-    switch (modules) {
+    switch (module) {
       case 'leads':
         sampleData = [
           {
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     const fileBuffer = await ExportService.exportToExcel(sampleData, filename);
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${filename}.xlsx"`,

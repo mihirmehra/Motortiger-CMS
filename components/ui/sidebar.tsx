@@ -13,6 +13,7 @@ import {
   CreditCard,
   Users,
   Activity,
+  Clock,
   LogOut,
   Menu,
   X,
@@ -94,6 +95,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       roles: ['admin', 'manager']
     },
     {
+      name: 'Follow-ups',
+      href: '/dashboard/followups',
+      icon: Clock,
+      roles: ['admin', 'manager', 'agent']
+    },
+    {
       name: 'Payment Records',
       href: '/dashboard/payments',
       icon: CreditCard,
@@ -139,7 +146,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             <Car className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">MotorTiger CMS</h1>
+            <h1 className="text-xl font-bold text-gray-900">AutoParts CMS</h1>
             <p className="text-sm text-gray-500">Management System</p>
           </div>
         </div>
@@ -256,7 +263,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 z-40 transform transition-transform duration-300 ease-in-out overflow-auto
+        fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 z-40 transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
       `}>
