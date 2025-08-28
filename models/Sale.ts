@@ -1,7 +1,7 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface ISale extends Document {
-  leadId: string;
+  leadId: Types.ObjectId;
   saleId: string;
   customerName: string;
   customerEmail: string;
@@ -15,10 +15,10 @@ export interface ISale extends Document {
   deliveryConfirmationSent: boolean;
   deliveryConfirmationDate?: Date;
   status: 'pending' | 'in_progress' | 'completed';
-  assignedAgent: string;
+  assignedAgent: Types.ObjectId;
   notes: string[];
-  createdBy: string;
-  updatedBy: string;
+  createdBy: Types.ObjectId;
+  updatedBy: Types.ObjectId;
 }
 
 const SaleSchema = new Schema<ISale>({

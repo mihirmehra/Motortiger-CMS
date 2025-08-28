@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import mongoose, { Document, Schema } from 'mongoose';
-=======
 import mongoose, { Document, Schema, Types } from 'mongoose';
->>>>>>> 9417930dcf7cbecdcc1e1f2aff48df8a6f088b0a
 
 export type OrderStatus = 
   | 'stage1 (engine pull)'
@@ -12,11 +8,7 @@ export type OrderStatus =
   | 'stage5 (shipping)'
   | 'stage6 (delivered)';
 
-<<<<<<< HEAD
-export interface IVendorOrder extends Document {
-=======
 export interface IVendorOrder {
->>>>>>> 9417930dcf7cbecdcc1e1f2aff48df8a6f088b0a
   date: Date;
   vendorId: string;
   vendorName: string;
@@ -52,13 +44,8 @@ export interface IVendorOrder {
   shippingCompany?: string;
   modeOfPayment?: string;
   fedexTracking?: string;
-<<<<<<< HEAD
-  createdBy: string;
-  updatedBy: string;
-=======
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
->>>>>>> 9417930dcf7cbecdcc1e1f2aff48df8a6f088b0a
 }
 
 const VendorOrderSchema = new Schema<IVendorOrder>({

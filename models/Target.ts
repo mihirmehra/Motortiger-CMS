@@ -9,10 +9,10 @@ export interface ITarget extends Document {
   remainingAmount: number;
   startDate: Date;
   endDate: Date;
-  assignedUsers: string[];
+  assignedUsers: mongoose.Types.ObjectId[];
   isActive: boolean;
-  createdBy: string;
-  updatedBy: string;
+  createdBy: mongoose.Types.ObjectId;
+  updatedBy: mongoose.Types.ObjectId;
 }
 
 const TargetSchema = new Schema<ITarget>({
