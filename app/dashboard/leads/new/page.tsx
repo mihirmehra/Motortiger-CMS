@@ -40,23 +40,27 @@ export default function NewLeadPage() {
     if (userData) {
       const user = JSON.parse(userData);
       setCurrentUser(user);
+      // Set the default assigned agent based on the user's role
+      if (user.role === 'agent' || user.role === 'manager') {
+        setFormData(prev => ({ ...prev, assignedAgent: user._id }));
+      }
       loadAvailableUsers(user);
     }
-  }, []);
+  }, []); // The dependency array is empty, so this runs only once
 
   const loadAvailableUsers = async (user: User) => {
     try {
       const token = localStorage.getItem('token');
-      
-      let url = '/api/users';
+      let url = '';
+
       if (user.role === 'manager') {
-        // Managers can assign to themselves and their assigned agents
         url = `/api/users/assignment-options?managerId=${user._id}`;
       } else if (user.role === 'admin') {
-        // Admins can assign to managers and agents
         url = '/api/users?role=manager,agent';
+      } else {
+        // Agents only assign to themselves, so no need to fetch other users
+        return;
       }
-      // Agents don't get options since they can only assign to themselves
       
       const response = await fetch(url, {
         headers: {
@@ -66,7 +70,12 @@ export default function NewLeadPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setAvailableUsers(data.users || []);
+        let usersToDisplay = data.users || [];
+        // Add the manager to their own assignment list
+        if (user.role === 'manager') {
+          usersToDisplay = [{ _id: user._id, name: user.name, email: user.email, role: user.role }, ...usersToDisplay];
+        }
+        setAvailableUsers(usersToDisplay);
       }
     } catch (error) {
       console.error('Failed to load available users:', error);
@@ -221,17 +230,29 @@ export default function NewLeadPage() {
                     value={formData.assignedAgent}
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={currentUser?.role === 'agent'}
                   >
-                    <option value="">Assign to me</option>
-                    {availableUsers.map(user => (
-                      <option key={user._id} value={user._id}>
-                        {user.name} ({user.email}) - {user.role}
+                    {/* The logic for rendering options is now more dynamic */}
+                    {currentUser?.role === 'agent' ? (
+                      <option value={currentUser._id}>
+                        {currentUser.name} (Assign to me)
                       </option>
-                    ))}
+                    ) : (
+                      <>
+                        <option value="">
+                            {currentUser?.role === 'manager' ? 'Assign to me' : 'Select an agent or manager'}
+                        </option>
+                        {availableUsers.map(user => (
+                          <option key={user._id} value={user._id}>
+                            {user.name} ({user.email}) - {user.role}
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
                   {currentUser?.role === 'agent' && (
                     <p className="text-xs text-gray-500 mt-1">
-                      As an agent, leads will be assigned to you automatically
+                      As an agent, leads are automatically assigned to you.
                     </p>
                   )}
                 </div>
