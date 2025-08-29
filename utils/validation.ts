@@ -57,17 +57,17 @@ export const paymentRecordSchema = z.object({
   paymentDate: z.string().or(z.date())
 });
 
-// export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { success: boolean; data?: T; errors?: string[] } {
-//   try {
-//     const validatedData = schema.parse(data);
-//     return { success: true, data: validatedData };
-//   } catch (error) {
-//     if (error instanceof z.ZodError) {
-//       return { 
-//         success: false, 
-//         errors: error.errors.map(err => `${err.path.join('.')}: ${err.message}`) 
-//       };
-//     }
-//     return { success: false, errors: ['Validation failed'] };
-//   }
-// }
+export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { success: boolean; data?: T; errors?: string[] } {
+  try {
+    const validatedData = schema.parse(data);
+    return { success: true, data: validatedData };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { 
+        success: false, 
+        errors: error.errors.map(err => `${err.path.join('.')}: ${err.message}`) 
+      };
+    }
+    return { success: false, errors: ['Validation failed'] };
+  }
+}
