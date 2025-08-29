@@ -40,6 +40,8 @@ export default function NewLeadPage() {
     if (userData) {
       const user = JSON.parse(userData);
       setCurrentUser(user);
+      console.log("user", user)
+      console.log("user", userData)
       // Set the default assigned agent based on the user's role
       if (user.role === 'agent' || user.role === 'manager') {
         setFormData(prev => ({ ...prev, assignedAgent: user._id }));
