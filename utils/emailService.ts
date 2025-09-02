@@ -20,8 +20,8 @@ class EmailService {
       secure: false,
       auth: {
         user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || ''
-      }
+        pass: process.env.SMTP_PASS || '',
+      },
     };
 
     this.transporter = nodemailer.createTransport(config);
@@ -33,7 +33,7 @@ class EmailService {
         from: process.env.SMTP_USER,
         to,
         subject: 'Order Confirmation - Used Auto Parts',
-        html: this.getOrderConfirmationTemplate(orderDetails)
+        html: this.getOrderConfirmationTemplate(orderDetails),
       };
 
       await this.transporter.sendMail(mailOptions);
@@ -44,13 +44,16 @@ class EmailService {
     }
   }
 
-  async sendDeliveryConfirmation(to: string, orderDetails: any): Promise<boolean> {
+  async sendDeliveryConfirmation(
+    to: string,
+    orderDetails: any
+  ): Promise<boolean> {
     try {
       const mailOptions = {
         from: process.env.SMTP_USER,
         to,
         subject: 'Order Delivered - Used Auto Parts',
-        html: this.getDeliveryConfirmationTemplate(orderDetails)
+        html: this.getDeliveryConfirmationTemplate(orderDetails),
       };
 
       await this.transporter.sendMail(mailOptions);
@@ -88,8 +91,12 @@ class EmailService {
             
             <div class="order-details">
               <h3>Order Details:</h3>
-              <p><strong>Order Number:</strong> ${orderDetails.orderNo || 'N/A'}</p>
-              <p><strong>Product:</strong> ${orderDetails.productName || 'N/A'}</p>
+              <p><strong>Order Number:</strong> ${
+                orderDetails.orderNo || 'N/A'
+              }</p>
+              <p><strong>Product:</strong> ${
+                orderDetails.productName || 'N/A'
+              }</p>
               <p><strong>Amount:</strong> $${orderDetails.salesPrice || 0}</p>
               <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
             </div>
@@ -133,9 +140,15 @@ class EmailService {
             
             <div class="order-details">
               <h3>Delivery Details:</h3>
-              <p><strong>Order Number:</strong> ${orderDetails.orderNo || 'N/A'}</p>
-              <p><strong>Product:</strong> ${orderDetails.productName || 'N/A'}</p>
-              <p><strong>Tracking Number:</strong> ${orderDetails.trackingNumber || 'N/A'}</p>
+              <p><strong>Order Number:</strong> ${
+                orderDetails.orderNo || 'N/A'
+              }</p>
+              <p><strong>Product:</strong> ${
+                orderDetails.productName || 'N/A'
+              }</p>
+              <p><strong>Tracking Number:</strong> ${
+                orderDetails.trackingNumber || 'N/A'
+              }</p>
               <p><strong>Delivery Date:</strong> ${new Date().toLocaleDateString()}</p>
             </div>
             

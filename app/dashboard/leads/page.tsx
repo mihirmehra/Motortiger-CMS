@@ -23,9 +23,11 @@ import {
   Eye,
   Edit,
   Trash2,
-  ArrowLeft
+  Save,
+  X
 } from 'lucide-react';
 import ImportModal from '@/components/ui/import-modal';
+import FollowupModal, { FollowupData } from '@/components/ui/followup-modal';
 
 interface Lead {
   _id: string;
@@ -36,10 +38,24 @@ interface Lead {
   phoneNumber: string;
   status: string;
   assignedAgent: {
+    _id: string;
     name: string;
     email: string;
   };
+  products: Array<{
+    productName: string;
+    productAmount?: number;
+    quantity?: number;
+  }>;
+  salesPrice?: number;
   createdAt: string;
+}
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 export default function LeadsPage() {
@@ -50,6 +66,13 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [editingStatus, setEditingStatus] = useState<{ [key: string]: string }>({});
+  const [editingAgent, setEditingAgent] = useState<{ [key: string]: string }>({});
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showFollowupModal, setShowFollowupModal] = useState(false);
+  const [selectedLeadForFollowup, setSelectedLeadForFollowup] = useState<Lead | null>(null);
+  const [selectedFollowupType, setSelectedFollowupType] = useState<string>('');
   const router = useRouter();
 
   const statusOptions = [
@@ -77,8 +100,40 @@ export default function LeadsPage() {
   };
 
   useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+      loadAvailableUsers(user);
+    }
     loadLeads();
   }, [currentPage, search, statusFilter]);
+
+  const loadAvailableUsers = async (user: User) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      let url = '/api/users';
+      if (user.role === 'manager') {
+        url = `/api/users/assignment-options?managerId=${user._id}`;
+      } else if (user.role === 'admin') {
+        url = '/api/users?role=manager,agent';
+      }
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Failed to load available users:', error);
+    }
+  };
 
   const loadLeads = async () => {
     try {
@@ -112,6 +167,130 @@ export default function LeadsPage() {
       console.error('Error loading leads:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusEdit = (leadId: string, currentStatus: string) => {
+    setEditingStatus({ [leadId]: currentStatus });
+  };
+
+  const handleAgentEdit = (leadId: string, currentAgentId: string) => {
+    setEditingAgent({ [leadId]: currentAgentId });
+  };
+
+  const handleStatusSave = async (leadId: string) => {
+    const newStatus = editingStatus[leadId];
+    if (!newStatus) return;
+
+    // Check if it's a follow-up status
+    const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
+    if (followupStatuses.includes(newStatus)) {
+      const lead = leads.find(l => l._id === leadId);
+      if (lead) {
+        setSelectedLeadForFollowup(lead);
+        setSelectedFollowupType(newStatus);
+        setShowFollowupModal(true);
+        return;
+      }
+    }
+
+    await updateLeadStatus(leadId, newStatus);
+  };
+
+  const updateLeadStatus = async (leadId: string, status: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        setEditingStatus({});
+        loadLeads();
+      } else {
+        alert('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  const handleFollowupSchedule = async (followupData: FollowupData) => {
+    if (!selectedLeadForFollowup) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // First update the lead status
+      await updateLeadStatus(selectedLeadForFollowup._id, selectedFollowupType);
+      
+      // Then schedule the follow-up
+      const response = await fetch(`/api/leads/${selectedLeadForFollowup._id}/schedule-followup`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          followupType: selectedFollowupType,
+          followupDate: followupData.followupDate,
+          followupTime: followupData.followupTime,
+          notes: followupData.notes
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`Follow-up scheduled successfully for ${new Date(data.followup.scheduledDate).toLocaleString()}`);
+        loadLeads();
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to schedule follow-up');
+      }
+    } catch (error) {
+      console.error('Error scheduling follow-up:', error);
+      alert('Failed to schedule follow-up');
+    }
+  };
+
+  const handleAgentSave = async (leadId: string) => {
+    const newAgentId = editingAgent[leadId];
+    if (!newAgentId) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ assignedAgent: newAgentId })
+      });
+
+      if (response.ok) {
+        setEditingAgent({});
+        loadLeads();
+      } else {
+        alert('Failed to update assigned agent');
+      }
+    } catch (error) {
+      console.error('Error updating assigned agent:', error);
+      alert('Failed to update assigned agent');
+    }
+  };
+
+  const handleCancel = (leadId: string, type: 'status' | 'agent') => {
+    if (type === 'status') {
+      setEditingStatus({});
+    } else {
+      setEditingAgent({});
     }
   };
 
@@ -181,7 +360,7 @@ export default function LeadsPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Lead Management</h1>
-              <p className="text-gray-600">Manage and track your sales leads</p>
+              <p className="text-gray-600">Manage and track your sales leads with multiple products</p>
             </div>
             
             <div className="flex gap-3">
@@ -257,7 +436,8 @@ export default function LeadsPage() {
                     <TableHead>Lead Number</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Assigned Agent</TableHead>
                     <TableHead>Created</TableHead>
@@ -268,15 +448,113 @@ export default function LeadsPage() {
                   {leads.map((lead) => (
                     <TableRow key={lead._id}>
                       <TableCell className="font-medium">{lead.leadNumber}</TableCell>
-                      <TableCell>{lead.customerName}</TableCell>
-                      <TableCell>{lead.phoneNumber}</TableCell>
-                      <TableCell>{lead.customerEmail}</TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(lead.status)}>
-                          {lead.status}
-                        </Badge>
+                        <div>
+                          <p className="font-medium">{lead.customerName}</p>
+                          <p className="text-sm text-gray-500">{lead.customerEmail}</p>
+                        </div>
                       </TableCell>
-                      <TableCell>{lead.assignedAgent?.name}</TableCell>
+                      <TableCell>{lead.phoneNumber}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {lead.products && lead.products.length > 0 ? (
+                            <div>
+                              <p className="font-medium">{lead.products.length} product(s)</p>
+                              <p className="text-gray-500">
+                                {lead.products.slice(0, 2).map(p => p.productName).join(', ')}
+                                {lead.products.length > 2 && '...'}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">No products</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {lead.salesPrice ? `$${lead.salesPrice.toLocaleString()}` : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {editingStatus[lead._id] !== undefined ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={editingStatus[lead._id]}
+                              onChange={(e) => setEditingStatus({ [lead._id]: e.target.value })}
+                              className="text-xs px-2 py-1 border rounded"
+                            >
+                              {statusOptions.map(status => (
+                                <option key={status} value={status}>{status}</option>
+                              ))}
+                            </select>
+                            <Button
+                              size="sm"
+                              onClick={() => handleStatusSave(lead._id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancel(lead._id, 'status')}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge 
+                            className={`${getStatusColor(lead.status)} cursor-pointer hover:opacity-80`}
+                            onClick={() => handleStatusEdit(lead._id, lead.status)}
+                          >
+                            {lead.status}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingAgent[lead._id] !== undefined ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={editingAgent[lead._id]}
+                              onChange={(e) => setEditingAgent({ [lead._id]: e.target.value })}
+                              className="text-xs px-2 py-1 border rounded min-w-[120px]"
+                            >
+                              <option value={lead.assignedAgent._id}>
+                                {lead.assignedAgent.name}
+                              </option>
+                              {availableUsers
+                                .filter(user => user._id !== lead.assignedAgent._id)
+                                .map(user => (
+                                <option key={user._id} value={user._id}>
+                                  {user.name}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAgentSave(lead._id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancel(lead._id, 'agent')}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div 
+                            className="cursor-pointer hover:bg-gray-50 p-1 rounded"
+                            onClick={() => handleAgentEdit(lead._id, lead.assignedAgent._id)}
+                          >
+                            <p className="text-sm font-medium">{lead.assignedAgent?.name}</p>
+                            <p className="text-xs text-gray-500">{lead.assignedAgent?.email}</p>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {new Date(lead.createdAt).toLocaleDateString()}
                       </TableCell>
@@ -344,6 +622,21 @@ export default function LeadsPage() {
           onClose={() => setShowImportModal(false)}
           module="leads"
           onImportComplete={loadLeads}
+        />
+
+        <FollowupModal
+          isOpen={showFollowupModal}
+          onClose={() => {
+            setShowFollowupModal(false);
+            setSelectedLeadForFollowup(null);
+            setSelectedFollowupType('');
+          }}
+          onSchedule={handleFollowupSchedule}
+          leadData={{
+            customerName: selectedLeadForFollowup?.customerName || '',
+            leadNumber: selectedLeadForFollowup?.leadNumber || ''
+          }}
+          followupType={selectedFollowupType}
         />
     </div>
   );

@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, History } from 'lucide-react';
+import { ArrowLeft, Edit, History, Package } from 'lucide-react';
+import NotesSection from '@/components/ui/notes-section';
 
 interface Lead {
   _id: string;
@@ -20,7 +21,30 @@ interface Lead {
     name: string;
     email: string;
   };
-  productName?: string;
+  products: Array<{
+    productId: string;
+    productName: string;
+    productAmount?: number;
+    quantity?: number;
+    vin?: string;
+    yearOfMfg?: string;
+    make?: string;
+    model?: string;
+    specification?: string;
+    vendorInfo?: {
+      vendorName?: string;
+      vendorLocation?: string;
+      recycler?: string;
+      shippingCompany?: string;
+      trackingNumber?: string;
+    };
+  }>;
+  billingAddress?: string;
+  shippingAddress?: string;
+  mechanicName?: string;
+  contactPhone?: string;
+  state?: string;
+  zone?: string;
   salesPrice?: number;
   createdAt: string;
   history: Array<{
@@ -30,6 +54,15 @@ interface Lead {
     };
     timestamp: string;
     notes?: string;
+  }>;
+  notes: Array<{
+    _id: string;
+    content: string;
+    createdBy: {
+      name: string;
+      email: string;
+    };
+    createdAt: string;
   }>;
 }
 
@@ -203,30 +236,167 @@ export default function LeadDetailPage() {
               </CardContent>
             </Card>
 
-            {(lead.productName || lead.salesPrice) && (
+            {(lead.billingAddress || lead.shippingAddress || lead.mechanicName) && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Product Information</CardTitle>
+                  <CardTitle>Address & Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {lead.productName && (
+                    {lead.billingAddress && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Product Name</label>
-                        <p className="text-lg">{lead.productName}</p>
+                        <label className="text-sm font-medium text-gray-500">Billing Address</label>
+                        <p className="text-lg">{lead.billingAddress}</p>
                       </div>
                     )}
-                    {lead.salesPrice && (
+                    {lead.shippingAddress && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Sales Price</label>
-                        <p className="text-lg font-semibold">${lead.salesPrice.toLocaleString()}</p>
+                        <label className="text-sm font-medium text-gray-500">Shipping Address</label>
+                        <p className="text-lg">{lead.shippingAddress}</p>
+                      </div>
+                    )}
+                    {lead.mechanicName && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Mechanic Name</label>
+                        <p className="text-lg">{lead.mechanicName}</p>
+                      </div>
+                    )}
+                    {lead.contactPhone && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Contact Phone</label>
+                        <p className="text-lg">{lead.contactPhone}</p>
+                      </div>
+                    )}
+                    {lead.state && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">State</label>
+                        <p className="text-lg">{lead.state}</p>
+                      </div>
+                    )}
+                    {lead.zone && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Zone</label>
+                        <p className="text-lg">{lead.zone}</p>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Products Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Products ({lead.products?.length || 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {lead.products && lead.products.length > 0 ? (
+                  <div className="space-y-6">
+                    {lead.products.map((product, index) => (
+                      <div key={product.productId} className="border rounded-lg p-4">
+                        <h4 className="font-semibold mb-3">Product {index + 1}</h4>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Product Name</label>
+                            <p className="text-lg font-semibold">{product.productName}</p>
+                          </div>
+                          {product.productAmount && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Amount</label>
+                              <p className="text-lg">${product.productAmount.toLocaleString()}</p>
+                            </div>
+                          )}
+                          {product.quantity && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Quantity</label>
+                              <p className="text-lg">{product.quantity}</p>
+                            </div>
+                          )}
+                          {product.vin && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">VIN</label>
+                              <p className="text-lg font-mono">{product.vin}</p>
+                            </div>
+                          )}
+                          {product.yearOfMfg && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Year</label>
+                              <p className="text-lg">{product.yearOfMfg}</p>
+                            </div>
+                          )}
+                          {product.make && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Make</label>
+                              <p className="text-lg">{product.make}</p>
+                            </div>
+                          )}
+                          {product.model && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Model</label>
+                              <p className="text-lg">{product.model}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Vendor Information for this Product */}
+                        {product.vendorInfo && (
+                          <div className="border-t pt-4">
+                            <h5 className="font-medium mb-3 text-gray-700">Vendor Information</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {product.vendorInfo.vendorName && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Vendor Name</label>
+                                  <p className="text-sm">{product.vendorInfo.vendorName}</p>
+                                </div>
+                              )}
+                              {product.vendorInfo.vendorLocation && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Vendor Location</label>
+                                  <p className="text-sm">{product.vendorInfo.vendorLocation}</p>
+                                </div>
+                              )}
+                              {product.vendorInfo.recycler && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Recycler</label>
+                                  <p className="text-sm">{product.vendorInfo.recycler}</p>
+                                </div>
+                              )}
+                              {product.vendorInfo.shippingCompany && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Shipping Company</label>
+                                  <p className="text-sm">{product.vendorInfo.shippingCompany}</p>
+                                </div>
+                              )}
+                              {product.vendorInfo.trackingNumber && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">Tracking Number</label>
+                                  <p className="text-sm font-mono">{product.vendorInfo.trackingNumber}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No products added to this lead</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
+
+          {/* Notes Section */}
+          <NotesSection 
+            leadId={lead._id}
+            notes={lead.notes || []}
+            onNotesUpdate={loadLead}
+          />
+        </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
@@ -247,6 +417,12 @@ export default function LeadDetailPage() {
                   <label className="text-sm font-medium text-gray-500">Created Date</label>
                   <p className="text-sm">{new Date(lead.createdAt).toLocaleDateString()}</p>
                 </div>
+                {lead.salesPrice && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Total Sales Price</label>
+                    <p className="text-lg font-bold text-green-600">${lead.salesPrice.toLocaleString()}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -287,7 +463,6 @@ export default function LeadDetailPage() {
             </Card>
           </div>
         </div>
-      </div>
     </div>
   );
 }

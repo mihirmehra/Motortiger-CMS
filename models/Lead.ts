@@ -1,10 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type LeadStatus = 
-  | 'New' 
-  | 'Connected' 
-  | 'Nurturing' 
-  | 'Waiting for respond' 
+export type LeadStatus =
+  | 'New'
+  | 'Connected'
+  | 'Nurturing'
+  | 'Waiting for respond'
   | 'Customer Waiting for respond'
   | 'Follow up'
   | 'Desision Follow up'
@@ -13,6 +13,34 @@ export type LeadStatus =
   | 'Customer making payment'
   | 'Sale Payment Done'
   | 'Sale Closed';
+
+export interface ILeadProduct {
+  productId: string;
+  productName: string;
+  productAmount?: number;
+  quantity?: number;
+  vin?: string;
+  mileageQuote?: string;
+  yearOfMfg?: string;
+  make?: string;
+  model?: string;
+  specification?: string;
+  attention?: string;
+  warranty?: string;
+  miles?: string;
+  vendorInfo?: {
+    vendorId?: string;
+    vendorName?: string;
+    vendorLocation?: string;
+    recycler?: string;
+    modeOfPaymentToRecycler?: string;
+    dateOfBooking?: Date;
+    dateOfDelivery?: Date;
+    trackingNumber?: string;
+    shippingCompany?: string;
+    fedexTracking?: string;
+  };
+}
 
 export interface ILead {
   leadId: string;
@@ -36,26 +64,8 @@ export interface ILead {
   state?: string;
   zone?: string;
   callType?: string;
-  productName?: string;
-  productAmount?: number;
-  quantity?: number;
-  vin?: string;
-  mileageQuote?: string;
-  yearOfMfg?: string;
-  make?: string;
-  model?: string;
-  specification?: string;
-  attention?: string;
-  warranty?: string;
-  miles?: string;
-  recycler?: string;
-  modeOfPaymentToRecycler?: string;
-  dateOfBooking?: Date;
-  dateOfDelivery?: Date;
-  trackingNumber?: string;
-  shippingCompany?: string;
+  products: ILeadProduct[];
   modeOfPayment?: string;
-  fedexTracking?: string;
   paymentPortal?: string;
   cardNumber?: string;
   expiry?: string;
@@ -83,40 +93,25 @@ export interface ILead {
     timestamp: Date;
     notes?: string;
   }>;
+  notes: Array<{
+    content: string;
+    createdBy: mongoose.Types.ObjectId;
+    createdAt: Date;
+  }>;
+  scheduledFollowups: Array<{
+    followupType: string;
+    scheduledDate: Date;
+    scheduledTime: string;
+    notes?: string;
+    isCompleted: boolean;
+    createdBy: mongoose.Types.ObjectId;
+    createdAt: Date;
+  }>;
 }
 
-const LeadSchema = new Schema<ILead>({
-  leadId: { type: String, unique: true, required: true },
-  leadNumber: { type: String, unique: true, required: true },
-  date: { type: Date, default: Date.now },
-  month: { type: String, required: true },
-  invoiceNo: String,
-  orderNo: { type: String, ref: 'VendorOrder' },
-  customerId: { type: String, ref: 'User' },
-  customerName: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
-  alternateNumber: String,
-  customerEmail: { type: String, required: true },
-  status: {
-    type: String,
-    enum: [
-      'New', 'Connected', 'Nurturing', 'Waiting for respond',
-      'Customer Waiting for respond', 'Follow up', 'Desision Follow up',
-      'Payment Follow up', 'Payment Under Process',
-      'Customer making payment', 'Sale Payment Done', 'Sale Closed'
-    ],
-    default: 'New'
-  },
-  orderStatus: String,
-  assignedAgent: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  billingAddress: String,
-  shippingAddress: String,
-  mechanicName: String,
-  contactPhone: String,
-  state: String,
-  zone: String,
-  callType: String,
-  productName: String,
+const LeadProductSchema = new Schema<ILeadProduct>({
+  productId: { type: String, required: true },
+  productName: { type: String, required: true },
   productAmount: Number,
   quantity: Number,
   vin: String,
@@ -128,47 +123,124 @@ const LeadSchema = new Schema<ILead>({
   attention: String,
   warranty: String,
   miles: String,
-  recycler: String,
-  modeOfPaymentToRecycler: String,
-  dateOfBooking: Date,
-  dateOfDelivery: Date,
-  trackingNumber: String,
-  shippingCompany: String,
-  modeOfPayment: String,
-  fedexTracking: String,
-  paymentPortal: { type: String, enum: ['EasyPayDirect', 'Authorize.net'] },
-  cardNumber: String,
-  expiry: String,
-  paymentDate: Date,
-  salesPrice: Number,
-  pendingBalance: Number,
-  costPrice: Number,
-  totalMargin: { type: Number, default: 0 },
-  refunded: Number,
-  disputeCategory: String,
-  disputeReason: String,
-  disputeDate: Date,
-  disputeResult: String,
-  refundDate: Date,
-  refundTAT: String,
-  arn: String,
-  refundCredited: Number,
-  chargebackAmount: Number,
-  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  history: [{
-    action: String,
-    changes: Schema.Types.Mixed,
-    performedBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    timestamp: { type: Date, default: Date.now },
-    notes: String
-  }]
-}, {
-  timestamps: true
+  vendorInfo: {
+    vendorId: String,
+    vendorName: String,
+    vendorLocation: String,
+    recycler: String,
+    modeOfPaymentToRecycler: String,
+    dateOfBooking: Date,
+    dateOfDelivery: Date,
+    trackingNumber: String,
+    shippingCompany: String,
+    fedexTracking: String,
+  }
 });
 
-// Calculate total margin automatically
-LeadSchema.pre('save', function(next) {
+const LeadSchema = new Schema<ILead>(
+  {
+    leadId: { type: String, unique: true, required: true },
+    leadNumber: { type: String, unique: true, required: true },
+    date: { type: Date, default: Date.now },
+    month: { type: String, required: true },
+    invoiceNo: String,
+    orderNo: { type: String, ref: 'VendorOrder' },
+    customerId: { type: String, ref: 'User' },
+    customerName: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
+    alternateNumber: String,
+    customerEmail: { type: String, required: true },
+    status: {
+      type: String,
+      enum: [
+        'New',
+        'Connected',
+        'Nurturing',
+        'Waiting for respond',
+        'Customer Waiting for respond',
+        'Follow up',
+        'Desision Follow up',
+        'Payment Follow up',
+        'Payment Under Process',
+        'Customer making payment',
+        'Sale Payment Done',
+        'Sale Closed',
+      ],
+      default: 'New',
+    },
+    orderStatus: String,
+    assignedAgent: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    billingAddress: String,
+    shippingAddress: String,
+    mechanicName: String,
+    contactPhone: String,
+    state: String,
+    zone: String,
+    callType: String,
+    products: [LeadProductSchema],
+    modeOfPayment: String,
+    paymentPortal: { type: String, enum: ['EasyPayDirect', 'Authorize.net'] },
+    cardNumber: String,
+    expiry: String,
+    paymentDate: Date,
+    salesPrice: Number,
+    pendingBalance: Number,
+    costPrice: Number,
+    totalMargin: { type: Number, default: 0 },
+    refunded: Number,
+    disputeCategory: String,
+    disputeReason: String,
+    disputeDate: Date,
+    disputeResult: String,
+    refundDate: Date,
+    refundTAT: String,
+    arn: String,
+    refundCredited: Number,
+    chargebackAmount: Number,
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    history: [
+      {
+        action: String,
+        changes: Schema.Types.Mixed,
+        performedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        timestamp: { type: Date, default: Date.now },
+        notes: String,
+      },
+    ],
+  notes: [
+    {
+      content: { type: String, required: true },
+      createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
+  scheduledFollowups: [
+    {
+      followupType: { type: String, required: true },
+      scheduledDate: { type: Date, required: true },
+      scheduledTime: { type: String, required: true },
+      notes: String,
+      isCompleted: { type: Boolean, default: false },
+      createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Calculate total margin and sales price automatically
+LeadSchema.pre('save', function (next) {
+  // Calculate total sales price from all products
+  if (this.products && this.products.length > 0) {
+    this.salesPrice = this.products.reduce((total, product) => {
+      return total + ((product.productAmount || 0) * (product.quantity || 1));
+    }, 0);
+  }
+
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
   }
@@ -182,4 +254,5 @@ LeadSchema.index({ assignedAgent: 1 });
 LeadSchema.index({ customerEmail: 1 });
 LeadSchema.index({ createdAt: -1 });
 
-export default mongoose.models.Lead || mongoose.model<ILead>('Lead', LeadSchema);
+export default mongoose.models.Lead ||
+  mongoose.model<ILead>('Lead', LeadSchema);

@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     const orderData = {
       ...body,
       orderNo: body.orderNo || generateOrderNumber(),
-      vendorId: body.vendorId || generateOrderNumber(),
+      vendorId: body.vendorId || generateVendorId(),
       createdBy: user.id,
       updatedBy: user.id
     };

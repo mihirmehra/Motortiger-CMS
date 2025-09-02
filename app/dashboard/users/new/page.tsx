@@ -187,8 +187,22 @@ export default function NewUserPage() {
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select a manager to assign this agent to their team
+                  </p>
                 </div>
 
+              
+              {/* Show info for managers creating agents */}
+              {currentUser?.role === 'manager' && formData.role === 'agent' && (
+                <div className="md:col-span-2">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <strong>Note:</strong> This agent will be automatically assigned to your team.
+                    </p>
+                  </div>
+                </div>
+              )}
                 {/* Show manager assignment only for admins creating agents */}
                 {currentUser?.role === 'admin' && formData.role === 'agent' && (
                   <div>

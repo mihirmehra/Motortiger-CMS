@@ -20,7 +20,7 @@ export async function handleFileUpload(
   try {
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
-    
+
     if (!files || files.length === 0) {
       throw new Error('No files provided');
     }
@@ -36,12 +36,16 @@ export async function handleFileUpload(
       const fileId = generateFileId();
       const fileName = `${fileId}_${file.name}`;
       const filePath = join(uploadDir, fileName);
-      
+
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
-      const uint8Array = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-      
+
+      const uint8Array = new Uint8Array(
+        buffer.buffer,
+        buffer.byteOffset,
+        buffer.byteLength
+      );
+
       await writeFile(filePath, uint8Array);
 
       uploadedFiles.push({
@@ -50,7 +54,7 @@ export async function handleFileUpload(
         fileName,
         filePath: `/uploads/${module}/${fileName}`,
         fileSize: file.size,
-        mimeType: file.type
+        mimeType: file.type,
       });
     }
 
@@ -69,7 +73,7 @@ export const ALLOWED_FILE_TYPES = [
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB

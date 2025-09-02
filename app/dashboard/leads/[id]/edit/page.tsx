@@ -6,19 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { generateProductId } from '@/utils/idGenerator';
+import FollowupModal, { FollowupData } from '@/components/ui/followup-modal';
 
 interface Lead {
   _id: string;
+  leadNumber?: string;
   customerName: string;
   customerEmail: string;
   phoneNumber: string;
   alternateNumber?: string;
   status: string;
   assignedAgent: string;
-  productName?: string;
-  productAmount?: number;
-  quantity?: number;
   billingAddress?: string;
   shippingAddress?: string;
   mechanicName?: string;
@@ -26,40 +26,25 @@ interface Lead {
   state?: string;
   zone?: string;
   callType?: string;
-  vin?: string;
-  mileageQuote?: string;
-  yearOfMfg?: string;
-  make?: string;
-  model?: string;
-  specification?: string;
-  attention?: string;
-  warranty?: string;
-  miles?: string;
-  recycler?: string;
-  modeOfPaymentToRecycler?: string;
-  dateOfBooking?: string;
-  dateOfDelivery?: string;
-  trackingNumber?: string;
-  shippingCompany?: string;
-  modeOfPayment?: string;
-  fedexTracking?: string;
-  paymentPortal?: string;
-  cardNumber?: string;
-  expiry?: string;
-  paymentDate?: string;
-  salesPrice?: number;
-  pendingBalance?: number;
-  costPrice?: number;
-  refunded?: number;
-  disputeCategory?: string;
-  disputeReason?: string;
-  disputeDate?: string;
-  disputeResult?: string;
-  refundDate?: string;
-  refundTAT?: string;
-  arn?: string;
-  refundCredited?: number;
-  chargebackAmount?: number;
+  products: Array<{
+    productId: string;
+    productName: string;
+    productAmount?: number;
+    quantity?: number;
+    vin?: string;
+    mileageQuote?: string;
+    yearOfMfg?: string;
+    make?: string;
+    model?: string;
+    specification?: string;
+    vendorInfo?: {
+      vendorName?: string;
+      vendorLocation?: string;
+      recycler?: string;
+      shippingCompany?: string;
+      trackingNumber?: string;
+    };
+  }>;
 }
 
 interface User {
@@ -76,6 +61,8 @@ export default function EditLeadPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentAssignedUser, setCurrentAssignedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<Partial<Lead>>({});
+  const [showFollowupModal, setShowFollowupModal] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string>('');
   const router = useRouter();
   const params = useParams();
 
@@ -84,8 +71,6 @@ export default function EditLeadPage() {
     'Customer Waiting for respond', 'Payment Under Process',
     'Customer making payment', 'Sale Payment Done', 'Sale Closed'
   ];
-
-  const paymentPortalOptions = ['EasyPayDirect', 'Authorize.net'];
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -115,14 +100,27 @@ export default function EditLeadPage() {
         setFormData({
           ...data.lead,
           assignedAgent: data.lead.assignedAgent._id,
-          dateOfBooking: data.lead.dateOfBooking ? new Date(data.lead.dateOfBooking).toISOString().split('T')[0] : '',
-          dateOfDelivery: data.lead.dateOfDelivery ? new Date(data.lead.dateOfDelivery).toISOString().split('T')[0] : '',
-          paymentDate: data.lead.paymentDate ? new Date(data.lead.paymentDate).toISOString().split('T')[0] : '',
-          disputeDate: data.lead.disputeDate ? new Date(data.lead.disputeDate).toISOString().split('T')[0] : '',
-          refundDate: data.lead.refundDate ? new Date(data.lead.refundDate).toISOString().split('T')[0] : ''
+          products: data.lead.products || [{
+            productId: generateProductId(),
+            productName: '',
+            productAmount: 0,
+            quantity: 1,
+            vin: '',
+            mileageQuote: '',
+            yearOfMfg: '',
+            make: '',
+            model: '',
+            specification: '',
+            vendorInfo: {
+              vendorName: '',
+              vendorLocation: '',
+              recycler: '',
+              shippingCompany: '',
+              trackingNumber: ''
+            }
+          }]
         });
         
-        // Load available users after we know current user role
         if (currentUser) {
           loadAvailableUsers(currentUser);
         }
@@ -144,13 +142,10 @@ export default function EditLeadPage() {
       
       let url = '/api/users';
       if (user.role === 'manager') {
-        // Managers can assign to themselves and their assigned agents
         url = `/api/users/assignment-options?managerId=${user._id}`;
       } else if (user.role === 'admin') {
-        // Admins can assign to managers and agents
         url = '/api/users?role=manager,agent';
       }
-      // Agents don't get options since they can only assign to themselves
       
       const response = await fetch(url, {
         headers: {
@@ -165,6 +160,59 @@ export default function EditLeadPage() {
     } catch (error) {
       console.error('Failed to load available users:', error);
     }
+  };
+
+  const addProduct = () => {
+    setFormData(prev => ({
+      ...prev,
+      products: [...(prev.products || []), {
+        productId: generateProductId(),
+        productName: '',
+        productAmount: 0,
+        quantity: 1,
+        vin: '',
+        mileageQuote: '',
+        yearOfMfg: '',
+        make: '',
+        model: '',
+        specification: '',
+        vendorInfo: {
+          vendorName: '',
+          vendorLocation: '',
+          recycler: '',
+          shippingCompany: '',
+          trackingNumber: ''
+        }
+      }]
+    }));
+  };
+
+  const removeProduct = (index: number) => {
+    if ((formData.products?.length || 0) > 1) {
+      setFormData(prev => ({
+        ...prev,
+        products: prev.products?.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateProduct = (index: number, field: string, value: any) => {
+    setFormData(prev => {
+      const updatedProducts = [...(prev.products || [])];
+      if (field.startsWith('vendorInfo.')) {
+        const vendorField = field.replace('vendorInfo.', '');
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          vendorInfo: {
+            ...updatedProducts[index].vendorInfo,
+            [vendorField]: value
+          }
+        };
+      } else {
+        updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+      }
+      return { ...prev, products: updatedProducts };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,10 +246,49 @@ export default function EditLeadPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    if (name === 'status') {
+      const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
+      if (followupStatuses.includes(value)) {
+        setPendingStatusChange(value);
+        setShowFollowupModal(true);
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value === '' ? undefined : value
     }));
+  };
+
+  const handleFollowupSchedule = async (followupData: FollowupData) => {
+    try {
+      // Update status first
+      setFormData(prev => ({
+        ...prev,
+        status: pendingStatusChange
+      }));
+
+      // Schedule follow-up
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/leads/${params.id}/schedule-followup`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          followupType: pendingStatusChange,
+          followupDate: followupData.followupDate,
+          followupTime: followupData.followupTime,
+          notes: followupData.notes
+        })
+      });
+    } catch (error) {
+      console.error('Error scheduling follow-up:', error);
+      alert('Failed to schedule follow-up');
+    }
   };
 
   if (loadingData) {
@@ -233,7 +320,7 @@ export default function EditLeadPage() {
           </div>
           
           <h1 className="text-3xl font-bold text-gray-900">Edit Lead</h1>
-          <p className="text-gray-600">Update lead information and details</p>
+          <p className="text-gray-600">Update lead information and product details</p>
         </div>
 
         {/* Form */}
@@ -241,7 +328,7 @@ export default function EditLeadPage() {
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle>Customer Information</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -336,211 +423,6 @@ export default function EditLeadPage() {
                       As an agent, you cannot reassign leads to other users
                     </p>
                   )}
-                  {currentUser?.role === 'manager' && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      You can assign to yourself or your assigned agents only
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Product Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Product Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <Label htmlFor="productName">Product Name</Label>
-                  <Input
-                    id="productName"
-                    name="productName"
-                    value={formData.productName || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="productAmount">Product Amount</Label>
-                  <Input
-                    id="productAmount"
-                    name="productAmount"
-                    type="number"
-                    step="0.01"
-                    value={formData.productAmount || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="quantity">Quantity</Label>
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    value={formData.quantity || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="vin">VIN</Label>
-                  <Input
-                    id="vin"
-                    name="vin"
-                    value={formData.vin || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="yearOfMfg">Year of Manufacturing</Label>
-                  <Input
-                    id="yearOfMfg"
-                    name="yearOfMfg"
-                    value={formData.yearOfMfg || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="make">Make</Label>
-                  <Input
-                    id="make"
-                    name="make"
-                    value={formData.make || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="model">Model</Label>
-                  <Input
-                    id="model"
-                    name="model"
-                    value={formData.model || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="specification">Specification</Label>
-                  <Input
-                    id="specification"
-                    name="specification"
-                    value={formData.specification || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="mileageQuote">Mileage Quote</Label>
-                  <Input
-                    id="mileageQuote"
-                    name="mileageQuote"
-                    value={formData.mileageQuote || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <Label htmlFor="salesPrice">Sales Price</Label>
-                  <Input
-                    id="salesPrice"
-                    name="salesPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.salesPrice || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="costPrice">Cost Price</Label>
-                  <Input
-                    id="costPrice"
-                    name="costPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.costPrice || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="pendingBalance">Pending Balance</Label>
-                  <Input
-                    id="pendingBalance"
-                    name="pendingBalance"
-                    type="number"
-                    step="0.01"
-                    value={formData.pendingBalance || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="modeOfPayment">Mode of Payment</Label>
-                  <Input
-                    id="modeOfPayment"
-                    name="modeOfPayment"
-                    value={formData.modeOfPayment || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="paymentPortal">Payment Portal</Label>
-                  <select
-                    id="paymentPortal"
-                    name="paymentPortal"
-                    value={formData.paymentPortal || ''}
-                    onChange={handleChange}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Portal</option>
-                    {paymentPortalOptions.map(portal => (
-                      <option key={portal} value={portal}>{portal}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="paymentDate">Payment Date</Label>
-                  <Input
-                    id="paymentDate"
-                    name="paymentDate"
-                    type="date"
-                    value={formData.paymentDate || ''}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
                 </div>
               </div>
             </CardContent>
@@ -618,6 +500,194 @@ export default function EditLeadPage() {
                     className="mt-1"
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="callType">Call Type</Label>
+                  <Input
+                    id="callType"
+                    name="callType"
+                    value={formData.callType || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Products Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Products</CardTitle>
+                <Button
+                  type="button"
+                  onClick={addProduct}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Product
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                {formData.products?.map((product, index) => (
+                  <div key={product.productId} className="border rounded-lg p-6 relative">
+                    {(formData.products?.length || 0) > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeProduct(index)}
+                        className="absolute top-4 right-4 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    
+                    <h4 className="text-lg font-semibold mb-4">Product {index + 1}</h4>
+                    
+                    {/* Product Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div>
+                        <Label>Product Name *</Label>
+                        <Input
+                          value={product.productName || ''}
+                          onChange={(e) => updateProduct(index, 'productName', e.target.value)}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Product Amount</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={product.productAmount || ''}
+                          onChange={(e) => updateProduct(index, 'productAmount', parseFloat(e.target.value) || 0)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Quantity</Label>
+                        <Input
+                          type="number"
+                          value={product.quantity || ''}
+                          onChange={(e) => updateProduct(index, 'quantity', parseInt(e.target.value) || 1)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>VIN</Label>
+                        <Input
+                          value={product.vin || ''}
+                          onChange={(e) => updateProduct(index, 'vin', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Year of Manufacturing</Label>
+                        <Input
+                          value={product.yearOfMfg || ''}
+                          onChange={(e) => updateProduct(index, 'yearOfMfg', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Make</Label>
+                        <Input
+                          value={product.make || ''}
+                          onChange={(e) => updateProduct(index, 'make', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Model</Label>
+                        <Input
+                          value={product.model || ''}
+                          onChange={(e) => updateProduct(index, 'model', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Specification</Label>
+                        <Input
+                          value={product.specification || ''}
+                          onChange={(e) => updateProduct(index, 'specification', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Mileage Quote</Label>
+                        <Input
+                          value={product.mileageQuote || ''}
+                          onChange={(e) => updateProduct(index, 'mileageQuote', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Vendor Information for this Product */}
+                    <div className="border-t pt-4">
+                      <h5 className="font-medium mb-3 text-gray-700">Vendor Information for this Product</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Vendor Name</Label>
+                          <Input
+                            value={product.vendorInfo?.vendorName || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.vendorName', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Vendor Location</Label>
+                          <Input
+                            value={product.vendorInfo?.vendorLocation || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.vendorLocation', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Recycler</Label>
+                          <Input
+                            value={product.vendorInfo?.recycler || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.recycler', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Shipping Company</Label>
+                          <Input
+                            value={product.vendorInfo?.shippingCompany || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.shippingCompany', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Tracking Number</Label>
+                          <Input
+                            value={product.vendorInfo?.trackingNumber || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.trackingNumber', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -640,7 +710,22 @@ export default function EditLeadPage() {
             </Button>
           </div>
         </form>
+
+        <FollowupModal
+          isOpen={showFollowupModal}
+          onClose={() => {
+            setShowFollowupModal(false);
+            setPendingStatusChange('');
+          }}
+          onSchedule={handleFollowupSchedule}
+          leadData={{
+            customerName: formData.customerName || '',
+            leadNumber: formData.leadNumber || ''
+          }}
+          followupType={pendingStatusChange}
+        />
       </div>
     </div>
   );
 }
+  

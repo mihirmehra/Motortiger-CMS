@@ -326,6 +326,11 @@ export default function FollowupsPage() {
                                 <p className="text-sm text-gray-600">
                                   <strong>Lead:</strong> {followup.leadNumber}
                                 </p>
+                                {followup.scheduledDate && (
+                                  <p className="text-sm text-gray-600">
+                                    <strong>Scheduled:</strong> {new Date(followup.scheduledDate).toLocaleString()}
+                                  </p>
+                                )}
                               </div>
                               
                               <div>

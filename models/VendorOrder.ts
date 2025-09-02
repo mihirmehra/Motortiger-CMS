@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export type OrderStatus = 
+export type OrderStatus =
   | 'stage1 (engine pull)'
   | 'stage2 (washing)'
   | 'stage3 (testing)'
@@ -48,57 +48,64 @@ export interface IVendorOrder {
   updatedBy: Types.ObjectId;
 }
 
-const VendorOrderSchema = new Schema<IVendorOrder>({
-  date: { type: Date, default: Date.now },
-  vendorId: { type: String, required: true },
-  vendorName: { type: String, required: true },
-  vendorLocation: { type: String, required: true },
-  orderNo: { type: String, unique: true, required: true },
-  customerId: { type: Schema.Types.ObjectId, ref: 'User' },
-  customerName: String,
-  orderStatus: {
-    type: String,
-    enum: [
-      'stage1 (engine pull)', 'stage2 (washing)', 'stage3 (testing)',
-      'stage4 (pack & ready)', 'stage5 (shipping)', 'stage6 (delivered)'
-    ],
-    default: 'stage1 (engine pull)'
+const VendorOrderSchema = new Schema<IVendorOrder>(
+  {
+    date: { type: Date, default: Date.now },
+    vendorId: { type: String, required: true },
+    vendorName: { type: String, required: true },
+    vendorLocation: { type: String, required: true },
+    orderNo: { type: String, unique: true, required: true },
+    customerId: { type: Schema.Types.ObjectId, ref: 'User' },
+    customerName: String,
+    orderStatus: {
+      type: String,
+      enum: [
+        'stage1 (engine pull)',
+        'stage2 (washing)',
+        'stage3 (testing)',
+        'stage4 (pack & ready)',
+        'stage5 (shipping)',
+        'stage6 (delivered)',
+      ],
+      default: 'stage1 (engine pull)',
+    },
+    itemSubtotal: Number,
+    shippingHandling: Number,
+    taxCollected: Number,
+    grandTotal: Number,
+    courierCompany: String,
+    trackingId: String,
+    productName: String,
+    productAmount: Number,
+    shippingAddress: String,
+    quantity: Number,
+    vin: String,
+    mileageQuote: String,
+    yearOfMfg: String,
+    make: String,
+    model: String,
+    specification: String,
+    attention: String,
+    warranty: String,
+    miles: String,
+    recycler: String,
+    modeOfPaymentToRecycler: String,
+    dateOfBooking: Date,
+    dateOfDelivery: Date,
+    trackingNumber: String,
+    shippingCompany: String,
+    modeOfPayment: String,
+    fedexTracking: String,
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  itemSubtotal: Number,
-  shippingHandling: Number,
-  taxCollected: Number,
-  grandTotal: Number,
-  courierCompany: String,
-  trackingId: String,
-  productName: String,
-  productAmount: Number,
-  shippingAddress: String,
-  quantity: Number,
-  vin: String,
-  mileageQuote: String,
-  yearOfMfg: String,
-  make: String,
-  model: String,
-  specification: String,
-  attention: String,
-  warranty: String,
-  miles: String,
-  recycler: String,
-  modeOfPaymentToRecycler: String,
-  dateOfBooking: Date,
-  dateOfDelivery: Date,
-  trackingNumber: String,
-  shippingCompany: String,
-  modeOfPayment: String,
-  fedexTracking: String,
-  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Calculate grand total automatically
-VendorOrderSchema.pre('save', function(next) {
+VendorOrderSchema.pre('save', function (next) {
   const subtotal = this.itemSubtotal || 0;
   const shipping = this.shippingHandling || 0;
   const tax = this.taxCollected || 0;
@@ -109,6 +116,9 @@ VendorOrderSchema.pre('save', function(next) {
 VendorOrderSchema.index({ orderNo: 1 });
 VendorOrderSchema.index({ vendorId: 1 });
 VendorOrderSchema.index({ orderStatus: 1 });
+VendorOrderSchema.index({ leadId: 1 });
+VendorOrderSchema.index({ productId: 1 });
 VendorOrderSchema.index({ createdBy: 1 });
 
-export default mongoose.models.VendorOrder || mongoose.model<IVendorOrder>('VendorOrder', VendorOrderSchema);
+export default mongoose.models.VendorOrder ||
+  mongoose.model<IVendorOrder>('VendorOrder', VendorOrderSchema);

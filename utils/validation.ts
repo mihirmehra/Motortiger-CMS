@@ -20,18 +20,44 @@ export const leadSchema = z.object({
   alternateNumber: z.string().optional(),
   status: z.string().optional(),
   assignedAgent: z.string().optional(),
-  productName: z.string().optional(),
-  productAmount: z.number().optional(),
-  quantity: z.number().optional(),
   billingAddress: z.string().optional(),
   shippingAddress: z.string().optional(),
   mechanicName: z.string().optional(),
   contactPhone: z.string().optional(),
   state: z.string().optional(),
   zone: z.string().optional(),
-  callType: z.string().optional()
+  callType: z.string().optional(),
+  products: z.array(z.object({
+    productId: z.string().optional(),
+    productName: z.string().min(1, 'Product name is required'),
+    productAmount: z.number().optional(),
+    quantity: z.number().optional(),
+    vin: z.string().optional(),
+    mileageQuote: z.string().optional(),
+    yearOfMfg: z.string().optional(),
+    make: z.string().optional(),
+    model: z.string().optional(),
+    specification: z.string().optional(),
+    vendorInfo: z.object({
+      vendorName: z.string().optional(),
+      vendorLocation: z.string().optional(),
+      recycler: z.string().optional(),
+      shippingCompany: z.string().optional(),
+      trackingNumber: z.string().optional(),
+    }).optional()
+  })).optional()
 });
 
+export const noteSchema = z.object({
+  content: z.string().min(1, 'Note content is required').max(1000, 'Note too long')
+});
+
+export const followupScheduleSchema = z.object({
+  followupType: z.enum(['Follow up', 'Desision Follow up', 'Payment Follow up']),
+  followupDate: z.string().min(1, 'Follow-up date is required'),
+  followupTime: z.string().min(1, 'Follow-up time is required'),
+  notes: z.string().optional()
+});
 export const vendorOrderSchema = z.object({
   vendorName: z.string().min(1, 'Vendor name is required'),
   vendorLocation: z.string().min(1, 'Vendor location is required'),

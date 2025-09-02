@@ -243,6 +243,7 @@ export default function NewVendorOrderPage() {
                       onChange={handleChange}
                       className="mt-1"
                       readOnly={!!selectedLead}
+                      placeholder={selectedProduct?.vendorInfo?.vendorName ? `Suggested: ${selectedProduct.vendorInfo.vendorName}` : ''}
                     />
                   </div>
 
@@ -254,6 +255,7 @@ export default function NewVendorOrderPage() {
                       value={formData.shippingAddress}
                       onChange={handleChange}
                       className="mt-1"
+                      placeholder={selectedProduct?.vendorInfo?.vendorLocation ? `Suggested: ${selectedProduct.vendorInfo.vendorLocation}` : ''}
                     />
                   </div>
                 </div>

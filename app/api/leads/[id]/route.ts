@@ -35,7 +35,8 @@ export async function GET(
       .populate('assignedAgent', 'name email')
       .populate('createdBy', 'name')
       .populate('updatedBy', 'name')
-      .populate('history.performedBy', 'name');
+      .populate('history.performedBy', 'name')
+      .populate('notes.createdBy', 'name email');
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });

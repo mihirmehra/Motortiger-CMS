@@ -7,6 +7,13 @@ import { validateData, leadSchema } from '@/utils/validation';
 import { generateUniqueId, generateLeadNumber } from '@/utils/idGenerator';
 import { logActivity, getChangeDescription } from '@/utils/activityLogger';
 
+// Fix missing import
+function generateProductId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `PROD${timestamp.slice(-6)}${random}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const token = extractTokenFromRequest(request);
@@ -59,6 +66,7 @@ export async function GET(request: NextRequest) {
       .populate('assignedAgent', 'name email')
       .populate('createdBy', 'name')
       .populate('updatedBy', 'name')
+      .populate('notes.createdBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -113,12 +121,26 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
+    // Process products data
+    const processedProducts = body.products?.map((product: any) => ({
+      ...product,
+      productId: product.productId || generateProductId()
+    })) || [];
+
     const leadData = {
       ...validation.data!,
       leadId: generateUniqueId('LEAD_'),
       leadNumber: generateLeadNumber(),
       month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
       assignedAgent: getAssignedAgent(body.assignedAgent, user),
+      products: processedProducts,
+      billingAddress: body.billingAddress,
+      shippingAddress: body.shippingAddress,
+      mechanicName: body.mechanicName,
+      contactPhone: body.contactPhone,
+      state: body.state,
+      zone: body.zone,
+      callType: body.callType,
       createdBy: user.id,
       updatedBy: user.id,
       history: [{

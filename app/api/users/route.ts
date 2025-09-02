@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     const userData = {
       ...validation.data!,
       password: hashedPassword,
-      assignedBy: body.role === 'agent' && user.role === 'manager' ? user.id : body.assignedTo
+      assignedBy: body.role === 'agent' ? (user.role === 'manager' ? user.id : body.assignedTo) : undefined
     };
 
     const newUser = new User(userData);

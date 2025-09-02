@@ -13,27 +13,31 @@ export interface IFileUpload extends Document {
   isActive: boolean;
 }
 
-const FileUploadSchema = new Schema<IFileUpload>({
-  fileId: { type: String, unique: true, required: true },
-  originalName: { type: String, required: true },
-  fileName: { type: String, required: true },
-  filePath: { type: String, required: true },
-  fileSize: { type: Number, required: true },
-  mimeType: { type: String, required: true },
-  uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  module: { 
-    type: String, 
-    enum: ['leads', 'vendor_orders', 'sales', 'payment_records', 'users'],
-    required: true 
+const FileUploadSchema = new Schema<IFileUpload>(
+  {
+    fileId: { type: String, unique: true, required: true },
+    originalName: { type: String, required: true },
+    fileName: { type: String, required: true },
+    filePath: { type: String, required: true },
+    fileSize: { type: Number, required: true },
+    mimeType: { type: String, required: true },
+    uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    module: {
+      type: String,
+      enum: ['leads', 'vendor_orders', 'sales', 'payment_records', 'users'],
+      required: true,
+    },
+    targetId: String,
+    isActive: { type: Boolean, default: true },
   },
-  targetId: String,
-  isActive: { type: Boolean, default: true }
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
 FileUploadSchema.index({ fileId: 1 });
 FileUploadSchema.index({ uploadedBy: 1 });
 FileUploadSchema.index({ module: 1, targetId: 1 });
 
-export default mongoose.models.FileUpload || mongoose.model<IFileUpload>('FileUpload', FileUploadSchema);
+export default mongoose.models.FileUpload ||
+  mongoose.model<IFileUpload>('FileUpload', FileUploadSchema);
