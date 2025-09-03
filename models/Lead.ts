@@ -142,7 +142,7 @@ const LeadProductSchema = new Schema<ILeadProduct>({
   }
 });
 
-const LeadSchema = new Schema<ILead>(
+const LeadSchema = new Schema(
   {
     leadId: { type: String, unique: true, required: true },
     leadNumber: { type: String, unique: true, required: true },
