@@ -5,23 +5,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock, Save } from 'lucide-react';
-
-interface FollowupModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSchedule: (followupData: FollowupData) => void;
-  leadData: {
-    customerName: string;
-    leadNumber: string;
-  };
-  followupType: string;
-}
+import { Calendar, Clock } from 'lucide-react';
 
 export interface FollowupData {
   followupDate: string;
   followupTime: string;
   notes?: string;
+}
+
+interface FollowupModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSchedule: (data: FollowupData) => void;
+  leadData: {
+    customerName: string;
+    leadNumber: string;
+  };
+  followupType: string;
 }
 
 export default function FollowupModal({ 
@@ -31,7 +31,7 @@ export default function FollowupModal({
   leadData, 
   followupType 
 }: FollowupModalProps) {
-  const [followupData, setFollowupData] = useState<FollowupData>({
+  const [formData, setFormData] = useState<FollowupData>({
     followupDate: '',
     followupTime: '',
     notes: ''
@@ -39,44 +39,31 @@ export default function FollowupModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!followupData.followupDate || !followupData.followupTime) {
+    if (!formData.followupDate || !formData.followupTime) {
       alert('Please select both date and time for the follow-up');
       return;
     }
-
-    onSchedule(followupData);
-    handleClose();
-  };
-
-  const handleClose = () => {
-    setFollowupData({
-      followupDate: '',
-      followupTime: '',
-      notes: ''
-    });
+    onSchedule(formData);
     onClose();
+    setFormData({ followupDate: '', followupTime: '', notes: '' });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFollowupData(prev => ({
+    setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Schedule {followupType}
-          </DialogTitle>
+          <DialogTitle>Schedule Follow-up</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="p-4 bg-blue-50 rounded-lg">
+        <div className="space-y-4">
+          <div className="p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-700">
               <strong>Customer:</strong> {leadData.customerName}
             </p>
@@ -88,14 +75,17 @@ export default function FollowupModal({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="followupDate">Follow-up Date *</Label>
+              <Label htmlFor="followupDate" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Follow-up Date *
+              </Label>
               <Input
                 id="followupDate"
                 name="followupDate"
                 type="date"
-                value={followupData.followupDate}
+                value={formData.followupDate}
                 onChange={handleChange}
                 required
                 className="mt-1"
@@ -104,49 +94,45 @@ export default function FollowupModal({
             </div>
 
             <div>
-              <Label htmlFor="followupTime">Follow-up Time *</Label>
+              <Label htmlFor="followupTime" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Follow-up Time *
+              </Label>
               <Input
                 id="followupTime"
                 name="followupTime"
                 type="time"
-                value={followupData.followupTime}
+                value={formData.followupTime}
                 onChange={handleChange}
                 required
                 className="mt-1"
               />
             </div>
-          </div>
 
-          <div>
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <textarea
-              id="notes"
-              name="notes"
-              value={followupData.notes}
-              onChange={handleChange}
-              placeholder="Add any additional notes for this follow-up..."
-              rows={3}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div>
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Add any notes for this follow-up..."
+                rows={3}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Schedule Follow-up
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Schedule Follow-up
+              </Button>
+            </div>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -15,8 +15,8 @@ export const loginSchema = z.object({
 
 export const leadSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required'),
-  phoneNumber: z.string().min(10, 'Valid phone number required'),
-  customerEmail: z.string().email('Invalid email format'),
+  phoneNumber: z.string().min(1, 'Phone number is required'),
+  customerEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
   alternateNumber: z.string().optional(),
   status: z.string().optional(),
   assignedAgent: z.string().optional(),
@@ -27,9 +27,28 @@ export const leadSchema = z.object({
   state: z.string().optional(),
   zone: z.string().optional(),
   callType: z.string().optional(),
+  // Payment fields
+  modeOfPayment: z.string().optional(),
+  paymentPortal: z.enum(['EasyPayDirect', 'Authorize.net']).optional(),
+  cardNumber: z.string().optional(),
+  expiry: z.string().optional(),
+  paymentDate: z.string().optional(),
+  salesPrice: z.number().optional(),
+  pendingBalance: z.number().optional(),
+  costPrice: z.number().optional(),
+  refunded: z.number().optional(),
+  disputeCategory: z.string().optional(),
+  disputeReason: z.string().optional(),
+  disputeDate: z.string().optional(),
+  disputeResult: z.string().optional(),
+  refundDate: z.string().optional(),
+  refundTAT: z.string().optional(),
+  arn: z.string().optional(),
+  refundCredited: z.number().optional(),
+  chargebackAmount: z.number().optional(),
   products: z.array(z.object({
     productId: z.string().optional(),
-    productName: z.string().min(1, 'Product name is required'),
+    productName: z.string().optional(),
     productAmount: z.number().optional(),
     quantity: z.number().optional(),
     vin: z.string().optional(),
@@ -38,12 +57,19 @@ export const leadSchema = z.object({
     make: z.string().optional(),
     model: z.string().optional(),
     specification: z.string().optional(),
+    attention: z.string().optional(),
+    warranty: z.string().optional(),
+    miles: z.string().optional(),
     vendorInfo: z.object({
       vendorName: z.string().optional(),
       vendorLocation: z.string().optional(),
       recycler: z.string().optional(),
-      shippingCompany: z.string().optional(),
+      modeOfPaymentToRecycler: z.string().optional(),
+      dateOfBooking: z.string().optional(),
+      dateOfDelivery: z.string().optional(),
       trackingNumber: z.string().optional(),
+      shippingCompany: z.string().optional(),
+      fedexTracking: z.string().optional(),
     }).optional()
   })).optional()
 });
@@ -58,14 +84,25 @@ export const followupScheduleSchema = z.object({
   followupTime: z.string().min(1, 'Follow-up time is required'),
   notes: z.string().optional()
 });
+
 export const vendorOrderSchema = z.object({
   vendorName: z.string().min(1, 'Vendor name is required'),
   vendorLocation: z.string().min(1, 'Vendor location is required'),
-  orderNo: z.string().min(1, 'Order number is required'),
+  orderNo: z.string().optional(),
   orderStatus: z.enum([
     'stage1 (engine pull)', 'stage2 (washing)', 'stage3 (testing)',
     'stage4 (pack & ready)', 'stage5 (shipping)', 'stage6 (delivered)'
-  ]).optional()
+  ]).optional(),
+  customerName: z.string().optional(),
+  productName: z.string().optional(),
+  productAmount: z.number().optional(),
+  quantity: z.number().optional(),
+  itemSubtotal: z.number().optional(),
+  shippingHandling: z.number().optional(),
+  taxCollected: z.number().optional(),
+  courierCompany: z.string().optional(),
+  trackingId: z.string().optional(),
+  shippingAddress: z.string().optional()
 });
 
 export const targetSchema = z.object({
@@ -80,7 +117,23 @@ export const paymentRecordSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required'),
   modeOfPayment: z.string().min(1, 'Payment mode is required'),
   salesPrice: z.number().positive('Sales price must be positive'),
-  paymentDate: z.string().or(z.date())
+  paymentDate: z.string().or(z.date()),
+  paymentPortal: z.enum(['EasyPayDirect', 'Authorize.net']).optional(),
+  cardNumber: z.string().optional(),
+  expiry: z.string().optional(),
+  pendingBalance: z.number().optional(),
+  costPrice: z.number().optional(),
+  refunded: z.number().optional(),
+  disputeCategory: z.string().optional(),
+  disputeReason: z.string().optional(),
+  disputeDate: z.string().optional(),
+  disputeResult: z.string().optional(),
+  refundDate: z.string().optional(),
+  refundTAT: z.string().optional(),
+  arn: z.string().optional(),
+  refundCredited: z.number().optional(),
+  chargebackAmount: z.number().optional(),
+  paymentStatus: z.enum(['pending', 'completed', 'failed', 'refunded', 'disputed']).optional()
 });
 
 export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): { success: boolean; data?: T; errors?: string[] } {

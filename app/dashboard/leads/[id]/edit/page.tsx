@@ -8,44 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { generateProductId } from '@/utils/idGenerator';
-import FollowupModal, { FollowupData } from '@/components/ui/followup-modal';
-
-interface Lead {
-  _id: string;
-  leadNumber?: string;
-  customerName: string;
-  customerEmail: string;
-  phoneNumber: string;
-  alternateNumber?: string;
-  status: string;
-  assignedAgent: string;
-  billingAddress?: string;
-  shippingAddress?: string;
-  mechanicName?: string;
-  contactPhone?: string;
-  state?: string;
-  zone?: string;
-  callType?: string;
-  products: Array<{
-    productId: string;
-    productName: string;
-    productAmount?: number;
-    quantity?: number;
-    vin?: string;
-    mileageQuote?: string;
-    yearOfMfg?: string;
-    make?: string;
-    model?: string;
-    specification?: string;
-    vendorInfo?: {
-      vendorName?: string;
-      vendorLocation?: string;
-      recycler?: string;
-      shippingCompany?: string;
-      trackingNumber?: string;
-    };
-  }>;
-}
+import NotesSection from '@/components/ui/notes-section';
 
 interface User {
   _id: string;
@@ -54,15 +17,120 @@ interface User {
   role: string;
 }
 
+interface Product {
+  productId: string;
+  productName: string;
+  productAmount: string;
+  quantity: string;
+  vin: string;
+  mileageQuote: string;
+  yearOfMfg: string;
+  make: string;
+  model: string;
+  specification: string;
+  attention: string;
+  warranty: string;
+  miles: string;
+  vendorInfo?: {
+    vendorName?: string;
+    vendorLocation?: string;
+    recycler?: string;
+    modeOfPaymentToRecycler?: string;
+    dateOfBooking?: string;
+    dateOfDelivery?: string;
+    trackingNumber?: string;
+    shippingCompany?: string;
+    fedexTracking?: string;
+  };
+}
+
+interface Lead {
+  _id: string;
+  leadId: string;
+  leadNumber: string;
+  customerName: string;
+  customerEmail: string;
+  phoneNumber: string;
+  alternateNumber?: string;
+  status: string;
+  assignedAgent: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  billingAddress?: string;
+  shippingAddress?: string;
+  mechanicName?: string;
+  contactPhone?: string;
+  state?: string;
+  zone?: string;
+  callType?: string;
+  products: Product[];
+  // Payment fields
+  modeOfPayment?: string;
+  paymentPortal?: string;
+  cardNumber?: string;
+  expiry?: string;
+  paymentDate?: string;
+  salesPrice?: number;
+  pendingBalance?: number;
+  costPrice?: number;
+  refunded?: number;
+  disputeCategory?: string;
+  disputeReason?: string;
+  disputeDate?: string;
+  disputeResult?: string;
+  refundDate?: string;
+  refundTAT?: string;
+  arn?: string;
+  refundCredited?: number;
+  chargebackAmount?: number;
+  notes: any[];
+}
+
 export default function EditLeadPage() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentAssignedUser, setCurrentAssignedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<Partial<Lead>>({});
-  const [showFollowupModal, setShowFollowupModal] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<string>('');
+  const [lead, setLead] = useState<Lead | null>(null);
+  const [formData, setFormData] = useState({
+    customerName: '',
+    customerEmail: '',
+    phoneNumber: '',
+    alternateNumber: '',
+    assignedAgent: '',
+    status: 'New',
+    billingAddress: '',
+    shippingAddress: '',
+    mechanicName: '',
+    contactPhone: '',
+    state: '',
+    zone: '',
+    callType: ''
+  });
+  const [paymentData, setPaymentData] = useState({
+    modeOfPayment: '',
+    paymentPortal: '',
+    cardNumber: '',
+    expiry: '',
+    paymentDate: '',
+    salesPrice: '',
+    pendingBalance: '',
+    costPrice: '',
+    refunded: '',
+    disputeCategory: '',
+    disputeReason: '',
+    disputeDate: '',
+    disputeResult: '',
+    refundDate: '',
+    refundTAT: '',
+    arn: '',
+    refundCredited: '',
+    chargebackAmount: ''
+  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [notes, setNotes] = useState<any[]>([]);
   const router = useRouter();
   const params = useParams();
 
@@ -75,66 +143,15 @@ export default function EditLeadPage() {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setCurrentUser(JSON.parse(userData));
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+      loadAvailableUsers(user);
     }
-  }, []);
-
-  useEffect(() => {
+    
     if (params.id) {
       loadLead();
     }
-  }, [params.id, currentUser]);
-
-  const loadLead = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/leads/${params.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCurrentAssignedUser(data.lead.assignedAgent);
-        setFormData({
-          ...data.lead,
-          assignedAgent: data.lead.assignedAgent._id,
-          products: data.lead.products || [{
-            productId: generateProductId(),
-            productName: '',
-            productAmount: 0,
-            quantity: 1,
-            vin: '',
-            mileageQuote: '',
-            yearOfMfg: '',
-            make: '',
-            model: '',
-            specification: '',
-            vendorInfo: {
-              vendorName: '',
-              vendorLocation: '',
-              recycler: '',
-              shippingCompany: '',
-              trackingNumber: ''
-            }
-          }]
-        });
-        
-        if (currentUser) {
-          loadAvailableUsers(currentUser);
-        }
-      } else {
-        console.error('Failed to load lead');
-        router.push('/dashboard/leads');
-      }
-    } catch (error) {
-      console.error('Error loading lead:', error);
-      router.push('/dashboard/leads');
-    } finally {
-      setLoadingData(false);
-    }
-  };
+  }, [params.id]);
 
   const loadAvailableUsers = async (user: User) => {
     try {
@@ -162,57 +179,183 @@ export default function EditLeadPage() {
     }
   };
 
-  const addProduct = () => {
-    setFormData(prev => ({
-      ...prev,
-      products: [...(prev.products || []), {
-        productId: generateProductId(),
-        productName: '',
-        productAmount: 0,
-        quantity: 1,
-        vin: '',
-        mileageQuote: '',
-        yearOfMfg: '',
-        make: '',
-        model: '',
-        specification: '',
-        vendorInfo: {
-          vendorName: '',
-          vendorLocation: '',
-          recycler: '',
-          shippingCompany: '',
-          trackingNumber: ''
+  const loadLead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/leads/${params.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      }]
-    }));
-  };
+      });
 
-  const removeProduct = (index: number) => {
-    if ((formData.products?.length || 0) > 1) {
-      setFormData(prev => ({
-        ...prev,
-        products: prev.products?.filter((_, i) => i !== index)
-      }));
+      if (response.ok) {
+        const data = await response.json();
+        const leadData = data.lead;
+        setLead(leadData);
+        
+        // Set form data
+        setFormData({
+          customerName: leadData.customerName || '',
+          customerEmail: leadData.customerEmail || '',
+          phoneNumber: leadData.phoneNumber || '',
+          alternateNumber: leadData.alternateNumber || '',
+          assignedAgent: leadData.assignedAgent?._id || '',
+          status: leadData.status || 'New',
+          billingAddress: leadData.billingAddress || '',
+          shippingAddress: leadData.shippingAddress || '',
+          mechanicName: leadData.mechanicName || '',
+          contactPhone: leadData.contactPhone || '',
+          state: leadData.state || '',
+          zone: leadData.zone || '',
+          callType: leadData.callType || ''
+        });
+
+        // Set payment data
+        setPaymentData({
+          modeOfPayment: leadData.modeOfPayment || '',
+          paymentPortal: leadData.paymentPortal || '',
+          cardNumber: leadData.cardNumber || '',
+          expiry: leadData.expiry || '',
+          paymentDate: leadData.paymentDate ? new Date(leadData.paymentDate).toISOString().split('T')[0] : '',
+          salesPrice: leadData.salesPrice?.toString() || '',
+          pendingBalance: leadData.pendingBalance?.toString() || '',
+          costPrice: leadData.costPrice?.toString() || '',
+          refunded: leadData.refunded?.toString() || '',
+          disputeCategory: leadData.disputeCategory || '',
+          disputeReason: leadData.disputeReason || '',
+          disputeDate: leadData.disputeDate ? new Date(leadData.disputeDate).toISOString().split('T')[0] : '',
+          disputeResult: leadData.disputeResult || '',
+          refundDate: leadData.refundDate ? new Date(leadData.refundDate).toISOString().split('T')[0] : '',
+          refundTAT: leadData.refundTAT || '',
+          arn: leadData.arn || '',
+          refundCredited: leadData.refundCredited?.toString() || '',
+          chargebackAmount: leadData.chargebackAmount?.toString() || ''
+        });
+
+        // Set products
+        const processedProducts = (leadData.products || []).map((product: any) => ({
+          productId: product.productId || generateProductId(),
+          productName: product.productName || '',
+          productAmount: product.productAmount?.toString() || '',
+          quantity: product.quantity?.toString() || '1',
+          vin: product.vin || '',
+          mileageQuote: product.mileageQuote || '',
+          yearOfMfg: product.yearOfMfg || '',
+          make: product.make || '',
+          model: product.model || '',
+          specification: product.specification || '',
+          attention: product.attention || '',
+          warranty: product.warranty || '',
+          miles: product.miles || '',
+          vendorInfo: {
+            vendorName: product.vendorInfo?.vendorName || '',
+            vendorLocation: product.vendorInfo?.vendorLocation || '',
+            recycler: product.vendorInfo?.recycler || '',
+            modeOfPaymentToRecycler: product.vendorInfo?.modeOfPaymentToRecycler || '',
+            dateOfBooking: product.vendorInfo?.dateOfBooking ? new Date(product.vendorInfo.dateOfBooking).toISOString().split('T')[0] : '',
+            dateOfDelivery: product.vendorInfo?.dateOfDelivery ? new Date(product.vendorInfo.dateOfDelivery).toISOString().split('T')[0] : '',
+            trackingNumber: product.vendorInfo?.trackingNumber || '',
+            shippingCompany: product.vendorInfo?.shippingCompany || '',
+            fedexTracking: product.vendorInfo?.fedexTracking || ''
+          }
+        }));
+        
+        // Ensure at least one product exists
+        if (processedProducts.length === 0) {
+          processedProducts.push({
+            productId: generateProductId(),
+            productName: '',
+            productAmount: '',
+            quantity: '1',
+            vin: '',
+            mileageQuote: '',
+            mileage: '',
+            yearOfMfg: '',
+            make: '',
+            model: '',
+            specification: '',
+            attention: '',
+            warranty: '',
+            miles: '',
+            vendorInfo: {
+              vendorName: '',
+              vendorLocation: '',
+              recycler: '',
+              modeOfPaymentToRecycler: '',
+              dateOfBooking: '',
+              dateOfDelivery: '',
+              trackingNumber: '',
+              shippingCompany: '',
+              fedexTracking: ''
+            }
+          });
+        }
+        
+        setProducts(processedProducts);
+        setNotes(leadData.notes || []);
+
+      } else {
+        console.error('Failed to load lead');
+        router.push('/dashboard/leads');
+      }
+    } catch (error) {
+      console.error('Error loading lead:', error);
+      router.push('/dashboard/leads');
+    } finally {
+      setLoadingData(false);
     }
   };
 
-  const updateProduct = (index: number, field: string, value: any) => {
-    setFormData(prev => {
-      const updatedProducts = [...(prev.products || [])];
-      if (field.startsWith('vendorInfo.')) {
-        const vendorField = field.replace('vendorInfo.', '');
-        updatedProducts[index] = {
-          ...updatedProducts[index],
-          vendorInfo: {
-            ...updatedProducts[index].vendorInfo,
-            [vendorField]: value
-          }
-        };
-      } else {
-        updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+  const addProduct = () => {
+    setProducts([...products, {
+      productId: generateProductId(),
+      productName: '',
+      productAmount: '',
+      quantity: '1',
+      vin: '',
+      mileageQuote: '',
+      yearOfMfg: '',
+      make: '',
+      model: '',
+      specification: '',
+      attention: '',
+      warranty: '',
+      miles: '',
+      vendorInfo: {
+        vendorName: '',
+        vendorLocation: '',
+        recycler: '',
+        modeOfPaymentToRecycler: '',
+        dateOfBooking: '',
+        dateOfDelivery: '',
+        trackingNumber: '',
+        shippingCompany: '',
+        fedexTracking: ''
       }
-      return { ...prev, products: updatedProducts };
-    });
+    }]);
+  };
+
+  const removeProduct = (index: number) => {
+    if (products.length > 1) {
+      setProducts(products.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateProduct = (index: number, field: string, value: string) => {
+    const updatedProducts = [...products];
+    if (field.startsWith('vendorInfo.')) {
+      const vendorField = field.replace('vendorInfo.', '');
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        vendorInfo: {
+          ...updatedProducts[index].vendorInfo,
+          [vendorField]: value
+        }
+      };
+    } else {
+      updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+    }
+    setProducts(updatedProducts);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -221,20 +364,83 @@ export default function EditLeadPage() {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Prepare products data
+      const productsData = products.filter(product => product.productName.trim()).map(product => ({
+        productId: product.productId,
+        productName: product.productName || undefined,
+        productAmount: product.productAmount ? parseFloat(product.productAmount) : undefined,
+        quantity: product.quantity ? parseInt(product.quantity) : 1,
+        vin: product.vin || undefined,
+        mileageQuote: product.mileageQuote || undefined,
+        yearOfMfg: product.yearOfMfg || undefined,
+        make: product.make || undefined,
+        model: product.model || undefined,
+        specification: product.specification || undefined,
+        attention: product.attention || undefined,
+        warranty: product.warranty || undefined,
+        miles: product.miles || undefined,
+        vendorInfo: (product.vendorInfo?.vendorName || product.vendorInfo?.vendorLocation) ? {
+          vendorName: product.vendorInfo?.vendorName || undefined,
+          vendorLocation: product.vendorInfo?.vendorLocation || undefined,
+          recycler: product.vendorInfo?.recycler || undefined,
+          modeOfPaymentToRecycler: product.vendorInfo?.modeOfPaymentToRecycler || undefined,
+          dateOfBooking: product.vendorInfo?.dateOfBooking || undefined,
+          dateOfDelivery: product.vendorInfo?.dateOfDelivery || undefined,
+          trackingNumber: product.vendorInfo?.trackingNumber || undefined,
+          shippingCompany: product.vendorInfo?.shippingCompany || undefined,
+          fedexTracking: product.vendorInfo?.fedexTracking || undefined,
+        } : undefined
+      }));
+
+      // Prepare payment data
+      const paymentFields = Object.values(paymentData).some(value => value !== '');
+      const paymentDataToSend = paymentFields ? {
+        modeOfPayment: paymentData.modeOfPayment || undefined,
+        paymentPortal: paymentData.paymentPortal || undefined,
+        cardNumber: paymentData.cardNumber || undefined,
+        expiry: paymentData.expiry || undefined,
+        paymentDate: paymentData.paymentDate || undefined,
+        disputeCategory: paymentData.disputeCategory || undefined,
+        disputeReason: paymentData.disputeReason || undefined,
+        disputeDate: paymentData.disputeDate || undefined,
+        disputeResult: paymentData.disputeResult || undefined,
+        refundDate: paymentData.refundDate || undefined,
+        refundTAT: paymentData.refundTAT || undefined,
+        arn: paymentData.arn || undefined,
+        salesPrice: paymentData.salesPrice ? parseFloat(paymentData.salesPrice) : undefined,
+        pendingBalance: paymentData.pendingBalance ? parseFloat(paymentData.pendingBalance) : undefined,
+        costPrice: paymentData.costPrice ? parseFloat(paymentData.costPrice) : undefined,
+        refunded: paymentData.refunded ? parseFloat(paymentData.refunded) : undefined,
+        refundCredited: paymentData.refundCredited ? parseFloat(paymentData.refundCredited) : undefined,
+        chargebackAmount: paymentData.chargebackAmount ? parseFloat(paymentData.chargebackAmount) : undefined,
+      } : {};
+      
+      const submitData = {
+        ...formData,
+        ...paymentDataToSend,
+        products: productsData,
+      };
+
       const response = await fetch(`/api/leads/${params.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
       if (response.ok) {
         router.push(`/dashboard/leads/${params.id}`);
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to update lead');
+        console.error('Validation errors:', data.details);
+        if (data.details && Array.isArray(data.details)) {
+          alert(`Validation failed:\n${data.details.join('\n')}`);
+        } else {
+          alert(data.error || 'Failed to update lead. Please check all required fields.');
+        }
       }
     } catch (error) {
       console.error('Error updating lead:', error);
@@ -245,50 +451,17 @@ export default function EditLeadPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    if (name === 'status') {
-      const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
-      if (followupStatuses.includes(value)) {
-        setPendingStatusChange(value);
-        setShowFollowupModal(true);
-        return;
-      }
-    }
-    
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' ? undefined : value
+      [e.target.name]: e.target.value
     }));
   };
 
-  const handleFollowupSchedule = async (followupData: FollowupData) => {
-    try {
-      // Update status first
-      setFormData(prev => ({
-        ...prev,
-        status: pendingStatusChange
-      }));
-
-      // Schedule follow-up
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/leads/${params.id}/schedule-followup`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          followupType: pendingStatusChange,
-          followupDate: followupData.followupDate,
-          followupTime: followupData.followupTime,
-          notes: followupData.notes
-        })
-      });
-    } catch (error) {
-      console.error('Error scheduling follow-up:', error);
-      alert('Failed to schedule follow-up');
-    }
+  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setPaymentData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   if (loadingData) {
@@ -320,12 +493,12 @@ export default function EditLeadPage() {
           </div>
           
           <h1 className="text-3xl font-bold text-gray-900">Edit Lead</h1>
-          <p className="text-gray-600">Update lead information and product details</p>
+          <p className="text-gray-600">Update lead information and details</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Information */}
+          {/* Customer Information */}
           <Card>
             <CardHeader>
               <CardTitle>Customer Information</CardTitle>
@@ -337,10 +510,11 @@ export default function EditLeadPage() {
                   <Input
                     id="customerName"
                     name="customerName"
-                    value={formData.customerName || ''}
+                    value={formData.customerName}
                     onChange={handleChange}
                     required
                     className="mt-1"
+                    placeholder="Enter customer's full name"
                   />
                 </div>
 
@@ -350,10 +524,10 @@ export default function EditLeadPage() {
                     id="customerEmail"
                     name="customerEmail"
                     type="email"
-                    value={formData.customerEmail || ''}
+                    value={formData.customerEmail}
                     onChange={handleChange}
-                    required
                     className="mt-1"
+                    placeholder="customer@example.com"
                   />
                 </div>
 
@@ -362,10 +536,11 @@ export default function EditLeadPage() {
                   <Input
                     id="phoneNumber"
                     name="phoneNumber"
-                    value={formData.phoneNumber || ''}
+                    value={formData.phoneNumber}
                     onChange={handleChange}
                     required
                     className="mt-1"
+                    placeholder="+1234567890"
                   />
                 </div>
 
@@ -374,7 +549,7 @@ export default function EditLeadPage() {
                   <Input
                     id="alternateNumber"
                     name="alternateNumber"
-                    value={formData.alternateNumber || ''}
+                    value={formData.alternateNumber}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -385,7 +560,7 @@ export default function EditLeadPage() {
                   <select
                     id="status"
                     name="status"
-                    value={formData.status || ''}
+                    value={formData.status}
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -397,36 +572,31 @@ export default function EditLeadPage() {
 
                 <div>
                   <Label htmlFor="assignedAgent">Assigned Agent</Label>
-                  {currentAssignedUser && (
-                    <div className="mb-2 p-2 bg-blue-50 rounded text-sm">
-                      <span className="font-medium">Currently assigned to: </span>
-                      {currentAssignedUser.name} ({currentAssignedUser.email}) - {currentAssignedUser.role}
-                    </div>
-                  )}
                   <select
                     id="assignedAgent"
                     name="assignedAgent"
-                    value={formData.assignedAgent || ''}
+                    value={formData.assignedAgent}
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={currentUser?.role === 'agent'}
                   >
-                    {currentUser?.role !== 'agent' && <option value="">Keep current assignment</option>}
+                    <option value="">Keep current assignment</option>
                     {availableUsers.map(user => (
                       <option key={user._id} value={user._id}>
                         {user.name} ({user.email}) - {user.role}
                       </option>
                     ))}
                   </select>
-                  {currentUser?.role === 'agent' && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      As an agent, you cannot reassign leads to other users
-                    </p>
-                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Notes Section */}
+          <NotesSection
+            leadId={params.id as string}
+            notes={notes}
+            onNoteAdded={(note) => setNotes(prev => [...prev, note])}
+          />
 
           {/* Address Information */}
           <Card>
@@ -440,7 +610,7 @@ export default function EditLeadPage() {
                   <Input
                     id="billingAddress"
                     name="billingAddress"
-                    value={formData.billingAddress || ''}
+                    value={formData.billingAddress}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -451,7 +621,7 @@ export default function EditLeadPage() {
                   <Input
                     id="shippingAddress"
                     name="shippingAddress"
-                    value={formData.shippingAddress || ''}
+                    value={formData.shippingAddress}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -462,7 +632,7 @@ export default function EditLeadPage() {
                   <Input
                     id="mechanicName"
                     name="mechanicName"
-                    value={formData.mechanicName || ''}
+                    value={formData.mechanicName}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -473,7 +643,7 @@ export default function EditLeadPage() {
                   <Input
                     id="contactPhone"
                     name="contactPhone"
-                    value={formData.contactPhone || ''}
+                    value={formData.contactPhone}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -484,7 +654,7 @@ export default function EditLeadPage() {
                   <Input
                     id="state"
                     name="state"
-                    value={formData.state || ''}
+                    value={formData.state}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -495,7 +665,7 @@ export default function EditLeadPage() {
                   <Input
                     id="zone"
                     name="zone"
-                    value={formData.zone || ''}
+                    value={formData.zone}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -506,7 +676,7 @@ export default function EditLeadPage() {
                   <Input
                     id="callType"
                     name="callType"
-                    value={formData.callType || ''}
+                    value={formData.callType}
                     onChange={handleChange}
                     className="mt-1"
                   />
@@ -532,9 +702,9 @@ export default function EditLeadPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-8">
-                {formData.products?.map((product, index) => (
+                {products.map((product, index) => (
                   <div key={product.productId} className="border rounded-lg p-6 relative">
-                    {(formData.products?.length || 0) > 1 && (
+                    {products.length > 1 && (
                       <Button
                         type="button"
                         variant="outline"
@@ -551,11 +721,10 @@ export default function EditLeadPage() {
                     {/* Product Details */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div>
-                        <Label>Product Name *</Label>
+                        <Label>Product Name</Label>
                         <Input
-                          value={product.productName || ''}
+                          value={product.productName}
                           onChange={(e) => updateProduct(index, 'productName', e.target.value)}
-                          required
                           className="mt-1"
                         />
                       </div>
@@ -565,8 +734,8 @@ export default function EditLeadPage() {
                         <Input
                           type="number"
                           step="0.01"
-                          value={product.productAmount || ''}
-                          onChange={(e) => updateProduct(index, 'productAmount', parseFloat(e.target.value) || 0)}
+                          value={product.productAmount}
+                          onChange={(e) => updateProduct(index, 'productAmount', e.target.value)}
                           className="mt-1"
                         />
                       </div>
@@ -575,8 +744,8 @@ export default function EditLeadPage() {
                         <Label>Quantity</Label>
                         <Input
                           type="number"
-                          value={product.quantity || ''}
-                          onChange={(e) => updateProduct(index, 'quantity', parseInt(e.target.value) || 1)}
+                          value={product.quantity}
+                          onChange={(e) => updateProduct(index, 'quantity', e.target.value)}
                           className="mt-1"
                         />
                       </div>
@@ -584,7 +753,7 @@ export default function EditLeadPage() {
                       <div>
                         <Label>VIN</Label>
                         <Input
-                          value={product.vin || ''}
+                          value={product.vin}
                           onChange={(e) => updateProduct(index, 'vin', e.target.value)}
                           className="mt-1"
                         />
@@ -593,7 +762,7 @@ export default function EditLeadPage() {
                       <div>
                         <Label>Year of Manufacturing</Label>
                         <Input
-                          value={product.yearOfMfg || ''}
+                          value={product.yearOfMfg}
                           onChange={(e) => updateProduct(index, 'yearOfMfg', e.target.value)}
                           className="mt-1"
                         />
@@ -602,7 +771,7 @@ export default function EditLeadPage() {
                       <div>
                         <Label>Make</Label>
                         <Input
-                          value={product.make || ''}
+                          value={product.make}
                           onChange={(e) => updateProduct(index, 'make', e.target.value)}
                           className="mt-1"
                         />
@@ -611,7 +780,7 @@ export default function EditLeadPage() {
                       <div>
                         <Label>Model</Label>
                         <Input
-                          value={product.model || ''}
+                          value={product.model}
                           onChange={(e) => updateProduct(index, 'model', e.target.value)}
                           className="mt-1"
                         />
@@ -620,7 +789,7 @@ export default function EditLeadPage() {
                       <div>
                         <Label>Specification</Label>
                         <Input
-                          value={product.specification || ''}
+                          value={product.specification}
                           onChange={(e) => updateProduct(index, 'specification', e.target.value)}
                           className="mt-1"
                         />
@@ -629,8 +798,35 @@ export default function EditLeadPage() {
                       <div>
                         <Label>Mileage Quote</Label>
                         <Input
-                          value={product.mileageQuote || ''}
+                          value={product.mileageQuote}
                           onChange={(e) => updateProduct(index, 'mileageQuote', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Attention</Label>
+                        <Input
+                          value={product.attention}
+                          onChange={(e) => updateProduct(index, 'attention', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Warranty</Label>
+                        <Input
+                          value={product.warranty}
+                          onChange={(e) => updateProduct(index, 'warranty', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Miles</Label>
+                        <Input
+                          value={product.miles}
+                          onChange={(e) => updateProduct(index, 'miles', e.target.value)}
                           className="mt-1"
                         />
                       </div>
@@ -668,10 +864,30 @@ export default function EditLeadPage() {
                         </div>
 
                         <div>
-                          <Label>Shipping Company</Label>
+                          <Label>Mode of Payment to Recycler</Label>
                           <Input
-                            value={product.vendorInfo?.shippingCompany || ''}
-                            onChange={(e) => updateProduct(index, 'vendorInfo.shippingCompany', e.target.value)}
+                            value={product.vendorInfo?.modeOfPaymentToRecycler || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.modeOfPaymentToRecycler', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Date of Booking</Label>
+                          <Input
+                            type="date"
+                            value={product.vendorInfo?.dateOfBooking || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.dateOfBooking', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Date of Delivery</Label>
+                          <Input
+                            type="date"
+                            value={product.vendorInfo?.dateOfDelivery || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.dateOfDelivery', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -684,10 +900,225 @@ export default function EditLeadPage() {
                             className="mt-1"
                           />
                         </div>
+
+                        <div>
+                          <Label>Shipping Company</Label>
+                          <Input
+                            value={product.vendorInfo?.shippingCompany || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.shippingCompany', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>FedEx Tracking</Label>
+                          <Input
+                            value={product.vendorInfo?.fedexTracking || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.fedexTracking', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customer Payment Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Payment Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <Label htmlFor="modeOfPayment">Mode of Payment</Label>
+                  <Input
+                    id="modeOfPayment"
+                    name="modeOfPayment"
+                    value={paymentData.modeOfPayment}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="paymentPortal">Payment Portal</Label>
+                  <select
+                    id="paymentPortal"
+                    name="paymentPortal"
+                    value={paymentData.paymentPortal}
+                    onChange={handlePaymentChange}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Portal</option>
+                    <option value="EasyPayDirect">EasyPayDirect</option>
+                    <option value="Authorize.net">Authorize.net</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="cardNumber">Card Number</Label>
+                  <Input
+                    id="cardNumber"
+                    name="cardNumber"
+                    value={paymentData.cardNumber}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="expiry">Expiry</Label>
+                  <Input
+                    id="expiry"
+                    name="expiry"
+                    value={paymentData.expiry}
+                    onChange={handlePaymentChange}
+                    placeholder="MM/YY"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="paymentDate">Payment Date</Label>
+                  <Input
+                    id="paymentDate"
+                    name="paymentDate"
+                    type="date"
+                    value={paymentData.paymentDate}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="salesPrice">Sales Price</Label>
+                  <Input
+                    id="salesPrice"
+                    name="salesPrice"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.salesPrice}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="costPrice">Cost Price</Label>
+                  <Input
+                    id="costPrice"
+                    name="costPrice"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.costPrice}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pendingBalance">Pending Balance</Label>
+                  <Input
+                    id="pendingBalance"
+                    name="pendingBalance"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.pendingBalance}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="refunded">Refunded</Label>
+                  <Input
+                    id="refunded"
+                    name="refunded"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.refunded}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Dispute Information */}
+              <div className="mt-6">
+                <h4 className="text-lg font-medium mb-4">Dispute Information (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="disputeCategory">Dispute Category</Label>
+                    <Input
+                      id="disputeCategory"
+                      name="disputeCategory"
+                      value={paymentData.disputeCategory}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="disputeReason">Dispute Reason</Label>
+                    <Input
+                      id="disputeReason"
+                      name="disputeReason"
+                      value={paymentData.disputeReason}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="disputeDate">Dispute Date</Label>
+                    <Input
+                      id="disputeDate"
+                      name="disputeDate"
+                      type="date"
+                      value={paymentData.disputeDate}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="disputeResult">Dispute Result</Label>
+                    <Input
+                      id="disputeResult"
+                      name="disputeResult"
+                      value={paymentData.disputeResult}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="refundDate">Refund Date</Label>
+                    <Input
+                      id="refundDate"
+                      name="refundDate"
+                      type="date"
+                      value={paymentData.refundDate}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="arn">ARN</Label>
+                    <Input
+                      id="arn"
+                      name="arn"
+                      value={paymentData.arn}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -710,22 +1141,7 @@ export default function EditLeadPage() {
             </Button>
           </div>
         </form>
-
-        <FollowupModal
-          isOpen={showFollowupModal}
-          onClose={() => {
-            setShowFollowupModal(false);
-            setPendingStatusChange('');
-          }}
-          onSchedule={handleFollowupSchedule}
-          leadData={{
-            customerName: formData.customerName || '',
-            leadNumber: formData.leadNumber || ''
-          }}
-          followupType={pendingStatusChange}
-        />
       </div>
     </div>
   );
 }
-  

@@ -6,8 +6,28 @@ import Target from '@/models/Target';
 import Followup from '@/models/Followup';
 import { verifyToken, extractTokenFromRequest } from '@/middleware/auth';
 import { PermissionManager } from '@/middleware/permissions';
+import { validateData, leadSchema } from '@/utils/validation';
 import { generateSaleId, generateFollowupId } from '@/utils/idGenerator';
 import { logActivity, getChangeDescription } from '@/utils/activityLogger';
+
+// Import missing function
+function generateVendorId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `VND${timestamp.slice(-6)}${random}`;
+}
+
+function generateOrderNumber(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `ORD${timestamp.slice(-6)}${random}`;
+}
+
+function generateProductId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `PROD${timestamp.slice(-6)}${random}`;
+}
 
 export async function GET(
   request: NextRequest,
@@ -83,6 +103,191 @@ export async function PUT(
     const body = await request.json();
     const oldValues = lead.toObject();
 
+    // Validate the request body
+    const validation = validateData(leadSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.errors },
+        { status: 400 }
+      );
+    }
+
+    // Process products data if provided
+    if (body.products) {
+      const processedProducts = body.products.map((product: any) => ({
+        productId: product.productId || generateProductId(),
+        productName: product.productName || '',
+        productAmount: product.productAmount || undefined,
+        quantity: product.quantity || 1,
+        vin: product.vin || undefined,
+        mileageQuote: product.mileageQuote || undefined,
+        yearOfMfg: product.yearOfMfg || undefined,
+        make: product.make || undefined,
+        model: product.model || undefined,
+        specification: product.specification || undefined,
+        attention: product.attention || undefined,
+        warranty: product.warranty || undefined,
+        miles: product.miles || undefined,
+        vendorInfo: product.vendorInfo ? {
+          vendorName: product.vendorInfo.vendorName || undefined,
+          vendorLocation: product.vendorInfo.vendorLocation || undefined,
+          recycler: product.vendorInfo.recycler || undefined,
+          modeOfPaymentToRecycler: product.vendorInfo.modeOfPaymentToRecycler || undefined,
+          dateOfBooking: product.vendorInfo.dateOfBooking ? new Date(product.vendorInfo.dateOfBooking) : undefined,
+          dateOfDelivery: product.vendorInfo.dateOfDelivery ? new Date(product.vendorInfo.dateOfDelivery) : undefined,
+          trackingNumber: product.vendorInfo.trackingNumber || undefined,
+          shippingCompany: product.vendorInfo.shippingCompany || undefined,
+          fedexTracking: product.vendorInfo.fedexTracking || undefined,
+        } : undefined
+      }));
+      body.products = processedProducts;
+    }
+
+    // Handle payment record creation/update if payment information is provided
+    if (body.salesPrice && body.salesPrice > 0) {
+      const PaymentRecord = (await import('@/models/PaymentRecord')).default;
+      
+      // Check if payment record already exists for this lead
+      let existingPayment = await PaymentRecord.findOne({ leadId: lead._id });
+      
+      if (existingPayment) {
+        // Update existing payment record
+        Object.assign(existingPayment, {
+          modeOfPayment: body.modeOfPayment || existingPayment.modeOfPayment,
+          paymentPortal: body.paymentPortal,
+          cardNumber: body.cardNumber,
+          expiry: body.expiry,
+          paymentDate: body.paymentDate ? new Date(body.paymentDate) : existingPayment.paymentDate,
+          salesPrice: body.salesPrice,
+          pendingBalance: body.pendingBalance,
+          costPrice: body.costPrice,
+          refunded: body.refunded,
+          disputeCategory: body.disputeCategory,
+          disputeReason: body.disputeReason,
+          disputeDate: body.disputeDate ? new Date(body.disputeDate) : existingPayment.disputeDate,
+          disputeResult: body.disputeResult,
+          refundDate: body.refundDate ? new Date(body.refundDate) : existingPayment.refundDate,
+          refundTAT: body.refundTAT,
+          arn: body.arn,
+          refundCredited: body.refundCredited,
+          chargebackAmount: body.chargebackAmount,
+          updatedBy: user.id
+        });
+        await existingPayment.save();
+      } else {
+        // Create new payment record
+        const { generatePaymentId } = await import('@/utils/idGenerator');
+        const paymentData = {
+          paymentId: generatePaymentId(),
+          leadId: lead._id,
+          customerName: lead.customerName,
+          modeOfPayment: body.modeOfPayment || 'Not specified',
+          paymentPortal: body.paymentPortal,
+          cardNumber: body.cardNumber,
+          expiry: body.expiry,
+          paymentDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
+          salesPrice: body.salesPrice,
+          pendingBalance: body.pendingBalance,
+          costPrice: body.costPrice,
+          refunded: body.refunded,
+          disputeCategory: body.disputeCategory,
+          disputeReason: body.disputeReason,
+          disputeDate: body.disputeDate ? new Date(body.disputeDate) : undefined,
+          disputeResult: body.disputeResult,
+          refundDate: body.refundDate ? new Date(body.refundDate) : undefined,
+          refundTAT: body.refundTAT,
+          arn: body.arn,
+          refundCredited: body.refundCredited,
+          chargebackAmount: body.chargebackAmount,
+          paymentStatus: 'pending',
+          createdBy: user.id,
+          updatedBy: user.id
+        };
+
+        const payment = new PaymentRecord(paymentData);
+        await payment.save();
+      }
+    }
+
+    // Handle vendor order creation/update for products with vendor information
+    if (body.products) {
+      const VendorOrder = (await import('@/models/VendorOrder')).default;
+      
+      for (const product of body.products) {
+        if (product.vendorInfo && (product.vendorInfo.vendorName || product.vendorInfo.vendorLocation)) {
+          // Check if vendor order already exists for this product
+          let existingOrder = await VendorOrder.findOne({ 
+            customerId: lead._id,
+            productName: product.productName 
+          });
+          
+          if (existingOrder) {
+            // Update existing vendor order
+            Object.assign(existingOrder, {
+              vendorName: product.vendorInfo.vendorName || existingOrder.vendorName,
+              vendorLocation: product.vendorInfo.vendorLocation || existingOrder.vendorLocation,
+              productName: product.productName,
+              productAmount: product.productAmount,
+              quantity: product.quantity,
+              vin: product.vin,
+              mileageQuote: product.mileageQuote,
+              yearOfMfg: product.yearOfMfg,
+              make: product.make,
+              model: product.model,
+              specification: product.specification,
+              recycler: product.vendorInfo.recycler,
+              modeOfPaymentToRecycler: product.vendorInfo.modeOfPaymentToRecycler,
+              dateOfBooking: product.vendorInfo.dateOfBooking,
+              dateOfDelivery: product.vendorInfo.dateOfDelivery,
+              trackingNumber: product.vendorInfo.trackingNumber,
+              shippingCompany: product.vendorInfo.shippingCompany,
+              fedexTracking: product.vendorInfo.fedexTracking,
+              updatedBy: user.id
+            });
+            await existingOrder.save();
+          } else {
+            // Create new vendor order
+            const vendorOrderData = {
+              vendorId: generateVendorId(),
+              vendorName: product.vendorInfo.vendorName || 'Not specified',
+              vendorLocation: product.vendorInfo.vendorLocation || 'Not specified',
+              orderNo: generateOrderNumber(),
+              customerId: lead._id,
+              customerName: lead.customerName,
+              orderStatus: 'stage1 (engine pull)',
+              productName: product.productName,
+              productAmount: product.productAmount,
+              quantity: product.quantity,
+              vin: product.vin,
+              mileageQuote: product.mileageQuote,
+              yearOfMfg: product.yearOfMfg,
+              make: product.make,
+              model: product.model,
+              specification: product.specification,
+              recycler: product.vendorInfo.recycler,
+              modeOfPaymentToRecycler: product.vendorInfo.modeOfPaymentToRecycler,
+              dateOfBooking: product.vendorInfo.dateOfBooking,
+              dateOfDelivery: product.vendorInfo.dateOfDelivery,
+              trackingNumber: product.vendorInfo.trackingNumber,
+              shippingCompany: product.vendorInfo.shippingCompany,
+              fedexTracking: product.vendorInfo.fedexTracking,
+              createdBy: user.id,
+              updatedBy: user.id
+            };
+
+            const vendorOrder = new VendorOrder(vendorOrderData);
+            await vendorOrder.save();
+
+            // Update lead with order number if not already set
+            if (!lead.orderNo) {
+              lead.orderNo = vendorOrder.orderNo;
+              await lead.save();
+            }
+          }
+        }
+      }
+    }
+
     // Handle follow-up status changes
     const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
     if (followupStatuses.includes(body.status) && !followupStatuses.includes(lead.status)) {
@@ -94,7 +299,7 @@ export async function PUT(
         customerName: lead.customerName,
         customerEmail: lead.customerEmail,
         phoneNumber: lead.phoneNumber,
-        productName: lead.productName,
+        productName: lead.products?.[0]?.productName,
         salesPrice: lead.salesPrice,
         status: body.status,
         assignedAgent: lead.assignedAgent,
@@ -113,7 +318,7 @@ export async function PUT(
         customerName: lead.customerName,
         customerEmail: lead.customerEmail,
         phoneNumber: lead.phoneNumber,
-        productName: lead.productName,
+        productName: lead.products?.[0]?.productName,
         salesPrice: lead.salesPrice,
         assignedAgent: lead.assignedAgent,
         createdBy: user.id,

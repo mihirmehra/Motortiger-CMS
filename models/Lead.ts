@@ -65,6 +65,7 @@ export interface ILead {
   zone?: string;
   callType?: string;
   products: ILeadProduct[];
+  // Payment Information
   modeOfPayment?: string;
   paymentPortal?: string;
   cardNumber?: string;
@@ -134,6 +135,10 @@ const LeadProductSchema = new Schema<ILeadProduct>({
     trackingNumber: String,
     shippingCompany: String,
     fedexTracking: String,
+    // Vendor Payment Information
+    paymentPortal: String,
+    modeOfPayment: String,
+    paymentDate: Date,
   }
 });
 
@@ -149,7 +154,13 @@ const LeadSchema = new Schema<ILead>(
     customerName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
     alternateNumber: String,
-    customerEmail: { type: String, required: true },
+    customerEmail: { type: String, validate: {
+      validator: function(v: string) {
+        if (!v) return true; // Allow empty email
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: 'Invalid email format'
+    }},
     status: {
       type: String,
       enum: [

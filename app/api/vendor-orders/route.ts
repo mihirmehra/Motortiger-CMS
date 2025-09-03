@@ -4,7 +4,7 @@ import VendorOrder from '@/models/VendorOrder';
 import { verifyToken, extractTokenFromRequest } from '@/middleware/auth';
 import { PermissionManager } from '@/middleware/permissions';
 import { validateData, vendorOrderSchema } from '@/utils/validation';
-import { generateOrderNumber } from '@/utils/idGenerator';
+import { generateOrderNumber, generateVendorId } from '@/utils/idGenerator';
 import { logActivity, getChangeDescription } from '@/utils/activityLogger';
 
 export async function GET(request: NextRequest) {

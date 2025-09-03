@@ -58,7 +58,6 @@ export function generateProductId(): string {
   return `PROD${timestamp.slice(-6)}${random}`;
 }
 
-// Fix missing function that was referenced in orders/new/page.tsx
 export function generateVendorId(): string {
   const timestamp = Date.now().toString();
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');

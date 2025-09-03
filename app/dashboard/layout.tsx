@@ -20,13 +20,15 @@ export default function DashboardLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-    useEffect(() => {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        setUser(JSON.parse(userData));
-      }
-      setLoading(false);
-    }, []);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -43,9 +45,9 @@ export default function DashboardLayout({
     );
   }
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-hidden">
       <Sidebar user={user} onLogout={handleLogout} />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-auto">
         {children}
       </div>
     </div>

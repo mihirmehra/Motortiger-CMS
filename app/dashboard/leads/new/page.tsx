@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { generateProductId } from '@/utils/idGenerator';
+import NotesSection from '@/components/ui/notes-section';
 
 interface User {
   _id: string;
@@ -27,11 +28,20 @@ interface Product {
   make: string;
   model: string;
   specification: string;
-  vendorName: string;
-  vendorLocation: string;
-  recycler: string;
-  shippingCompany: string;
-  trackingNumber: string;
+  attention: string;
+  warranty: string;
+  miles: string;
+  vendorInfo: {
+    vendorName: string;
+    vendorLocation: string;
+    recycler: string;
+    modeOfPaymentToRecycler: string;
+    dateOfBooking: string;
+    dateOfDelivery: string;
+    trackingNumber: string;
+    shippingCompany: string;
+    fedexTracking: string;
+  };
 }
 
 export default function NewLeadPage() {
@@ -53,6 +63,26 @@ export default function NewLeadPage() {
     zone: '',
     callType: ''
   });
+  const [paymentData, setPaymentData] = useState({
+    modeOfPayment: '',
+    paymentPortal: '',
+    cardNumber: '',
+    expiry: '',
+    paymentDate: '',
+    salesPrice: '',
+    pendingBalance: '',
+    costPrice: '',
+    refunded: '',
+    disputeCategory: '',
+    disputeReason: '',
+    disputeDate: '',
+    disputeResult: '',
+    refundDate: '',
+    refundTAT: '',
+    arn: '',
+    refundCredited: '',
+    chargebackAmount: ''
+  });
   const [products, setProducts] = useState<Product[]>([{
     productId: generateProductId(),
     productName: '',
@@ -64,11 +94,20 @@ export default function NewLeadPage() {
     make: '',
     model: '',
     specification: '',
-    vendorName: '',
-    vendorLocation: '',
-    recycler: '',
-    shippingCompany: '',
-    trackingNumber: ''
+    attention: '',
+    warranty: '',
+    miles: '',
+    vendorInfo: {
+      vendorName: '',
+      vendorLocation: '',
+      recycler: '',
+      modeOfPaymentToRecycler: '',
+      dateOfBooking: '',
+      dateOfDelivery: '',
+      trackingNumber: '',
+      shippingCompany: '',
+      fedexTracking: ''
+    }
   }]);
   const router = useRouter();
 
@@ -125,11 +164,20 @@ export default function NewLeadPage() {
       make: '',
       model: '',
       specification: '',
-      vendorName: '',
-      vendorLocation: '',
-      recycler: '',
-      shippingCompany: '',
-      trackingNumber: ''
+      attention: '',
+      warranty: '',
+      miles: '',
+      vendorInfo: {
+        vendorName: '',
+        vendorLocation: '',
+        recycler: '',
+        modeOfPaymentToRecycler: '',
+        dateOfBooking: '',
+        dateOfDelivery: '',
+        trackingNumber: '',
+        shippingCompany: '',
+        fedexTracking: ''
+      }
     }]);
   };
 
@@ -141,7 +189,18 @@ export default function NewLeadPage() {
 
   const updateProduct = (index: number, field: string, value: string) => {
     const updatedProducts = [...products];
-    updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+    if (field.startsWith('vendorInfo.')) {
+      const vendorField = field.replace('vendorInfo.', '');
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        vendorInfo: {
+          ...updatedProducts[index].vendorInfo,
+          [vendorField]: value
+        }
+      };
+    } else {
+      updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+    }
     setProducts(updatedProducts);
   };
 
@@ -153,9 +212,9 @@ export default function NewLeadPage() {
       const token = localStorage.getItem('token');
       
       // Prepare products data
-      const productsData = products.map(product => ({
+      const productsData = products.filter(product => product.productName.trim()).map(product => ({
         productId: product.productId,
-        productName: product.productName,
+        productName: product.productName || undefined,
         productAmount: product.productAmount ? parseFloat(product.productAmount) : undefined,
         quantity: product.quantity ? parseInt(product.quantity) : 1,
         vin: product.vin || undefined,
@@ -164,17 +223,45 @@ export default function NewLeadPage() {
         make: product.make || undefined,
         model: product.model || undefined,
         specification: product.specification || undefined,
-        vendorInfo: {
-          vendorName: product.vendorName || undefined,
-          vendorLocation: product.vendorLocation || undefined,
-          recycler: product.recycler || undefined,
-          shippingCompany: product.shippingCompany || undefined,
-          trackingNumber: product.trackingNumber || undefined,
-        }
+        attention: product.attention || undefined,
+        warranty: product.warranty || undefined,
+        miles: product.miles || undefined,
+        vendorInfo: (product.vendorInfo?.vendorName || product.vendorInfo?.vendorLocation) ? {
+          vendorName: product.vendorInfo?.vendorName || undefined,
+          vendorLocation: product.vendorInfo?.vendorLocation || undefined,
+          recycler: product.vendorInfo?.recycler || undefined,
+          modeOfPaymentToRecycler: product.vendorInfo?.modeOfPaymentToRecycler || undefined,
+          dateOfBooking: product.vendorInfo?.dateOfBooking || undefined,
+          dateOfDelivery: product.vendorInfo?.dateOfDelivery || undefined,
+          trackingNumber: product.vendorInfo?.trackingNumber || undefined,
+          shippingCompany: product.vendorInfo?.shippingCompany || undefined,
+          fedexTracking: product.vendorInfo?.fedexTracking || undefined,
+        } : undefined
       }));
       
       const submitData = {
         ...formData,
+        // Only include payment data if at least one payment field is filled
+        ...(Object.values(paymentData).some(value => value !== '') ? {
+          modeOfPayment: paymentData.modeOfPayment || undefined,
+          paymentPortal: paymentData.paymentPortal || undefined,
+          cardNumber: paymentData.cardNumber || undefined,
+          expiry: paymentData.expiry || undefined,
+          paymentDate: paymentData.paymentDate || undefined,
+          disputeCategory: paymentData.disputeCategory || undefined,
+          disputeReason: paymentData.disputeReason || undefined,
+          disputeDate: paymentData.disputeDate || undefined,
+          disputeResult: paymentData.disputeResult || undefined,
+          refundDate: paymentData.refundDate || undefined,
+          refundTAT: paymentData.refundTAT || undefined,
+          arn: paymentData.arn || undefined,
+        } : {}),
+        salesPrice: paymentData.salesPrice ? parseFloat(paymentData.salesPrice) : undefined,
+        pendingBalance: paymentData.pendingBalance ? parseFloat(paymentData.pendingBalance) : undefined,
+        costPrice: paymentData.costPrice ? parseFloat(paymentData.costPrice) : undefined,
+        refunded: paymentData.refunded ? parseFloat(paymentData.refunded) : undefined,
+        refundCredited: paymentData.refundCredited ? parseFloat(paymentData.refundCredited) : undefined,
+        chargebackAmount: paymentData.chargebackAmount ? parseFloat(paymentData.chargebackAmount) : undefined,
         products: productsData,
         assignedAgent: formData.assignedAgent || undefined
       };
@@ -193,7 +280,11 @@ export default function NewLeadPage() {
       } else {
         const data = await response.json();
         console.error('Validation errors:', data.details);
-        alert(data.error || 'Failed to create lead. Please check all required fields.');
+        if (data.details && Array.isArray(data.details)) {
+          alert(`Validation failed:\n${data.details.join('\n')}`);
+        } else {
+          alert(data.error || 'Failed to create lead. Please check all required fields.');
+        }
       }
     } catch (error) {
       console.error('Error creating lead:', error);
@@ -205,6 +296,13 @@ export default function NewLeadPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setPaymentData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
@@ -249,6 +347,7 @@ export default function NewLeadPage() {
                     onChange={handleChange}
                     required
                     className="mt-1"
+                    placeholder="Enter customer's full name"
                   />
                 </div>
 
@@ -260,8 +359,8 @@ export default function NewLeadPage() {
                     type="email"
                     value={formData.customerEmail}
                     onChange={handleChange}
-                    required
                     className="mt-1"
+                    placeholder="customer@example.com"
                   />
                 </div>
 
@@ -274,6 +373,7 @@ export default function NewLeadPage() {
                     onChange={handleChange}
                     required
                     className="mt-1"
+                    placeholder="+1234567890"
                   />
                 </div>
 
@@ -452,11 +552,10 @@ export default function NewLeadPage() {
                     {/* Product Details */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div>
-                        <Label>Product Name *</Label>
+                        <Label>Product Name</Label>
                         <Input
                           value={product.productName}
                           onChange={(e) => updateProduct(index, 'productName', e.target.value)}
-                          required
                           className="mt-1"
                         />
                       </div>
@@ -535,17 +634,44 @@ export default function NewLeadPage() {
                           className="mt-1"
                         />
                       </div>
+
+                      <div>
+                        <Label>Attention</Label>
+                        <Input
+                          value={product.attention}
+                          onChange={(e) => updateProduct(index, 'attention', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Warranty</Label>
+                        <Input
+                          value={product.warranty}
+                          onChange={(e) => updateProduct(index, 'warranty', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Miles</Label>
+                        <Input
+                          value={product.miles}
+                          onChange={(e) => updateProduct(index, 'miles', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
 
                     {/* Vendor Information for this Product */}
                     <div className="border-t pt-4">
                       <h5 className="font-medium mb-3 text-gray-700">Vendor Information for this Product</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <Label>Vendor Name</Label>
                           <Input
-                            value={product.vendorName}
-                            onChange={(e) => updateProduct(index, 'vendorName', e.target.value)}
+                            value={product.vendorInfo?.vendorName || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.vendorName', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -553,8 +679,8 @@ export default function NewLeadPage() {
                         <div>
                           <Label>Vendor Location</Label>
                           <Input
-                            value={product.vendorLocation}
-                            onChange={(e) => updateProduct(index, 'vendorLocation', e.target.value)}
+                            value={product.vendorInfo?.vendorLocation || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.vendorLocation', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -562,8 +688,37 @@ export default function NewLeadPage() {
                         <div>
                           <Label>Recycler</Label>
                           <Input
-                            value={product.recycler}
-                            onChange={(e) => updateProduct(index, 'recycler', e.target.value)}
+                            value={product.vendorInfo?.recycler || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.recycler', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Mode of Payment to Recycler</Label>
+                          <Input
+                            value={product.vendorInfo?.modeOfPaymentToRecycler || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.modeOfPaymentToRecycler', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Date of Booking</Label>
+                          <Input
+                            type="date"
+                            value={product.vendorInfo?.dateOfBooking || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.dateOfBooking', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Date of Delivery</Label>
+                          <Input
+                            type="date"
+                            value={product.vendorInfo?.dateOfDelivery || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.dateOfDelivery', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -571,8 +726,8 @@ export default function NewLeadPage() {
                         <div>
                           <Label>Shipping Company</Label>
                           <Input
-                            value={product.shippingCompany}
-                            onChange={(e) => updateProduct(index, 'shippingCompany', e.target.value)}
+                            value={product.vendorInfo?.shippingCompany || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.shippingCompany', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -580,8 +735,17 @@ export default function NewLeadPage() {
                         <div>
                           <Label>Tracking Number</Label>
                           <Input
-                            value={product.trackingNumber}
-                            onChange={(e) => updateProduct(index, 'trackingNumber', e.target.value)}
+                            value={product.vendorInfo?.trackingNumber || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.trackingNumber', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>FedEx Tracking</Label>
+                          <Input
+                            value={product.vendorInfo?.fedexTracking || ''}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.fedexTracking', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -589,6 +753,203 @@ export default function NewLeadPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customer Payment Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Payment Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <Label htmlFor="modeOfPayment">Mode of Payment</Label>
+                  <Input
+                    id="modeOfPayment"
+                    name="modeOfPayment"
+                    value={paymentData.modeOfPayment}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="paymentPortal">Payment Portal</Label>
+                  <select
+                    id="paymentPortal"
+                    name="paymentPortal"
+                    value={paymentData.paymentPortal}
+                    onChange={handlePaymentChange}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Portal</option>
+                    <option value="EasyPayDirect">EasyPayDirect</option>
+                    <option value="Authorize.net">Authorize.net</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="cardNumber">Card Number</Label>
+                  <Input
+                    id="cardNumber"
+                    name="cardNumber"
+                    value={paymentData.cardNumber}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="expiry">Expiry</Label>
+                  <Input
+                    id="expiry"
+                    name="expiry"
+                    value={paymentData.expiry}
+                    onChange={handlePaymentChange}
+                    placeholder="MM/YY"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="paymentDate">Payment Date</Label>
+                  <Input
+                    id="paymentDate"
+                    name="paymentDate"
+                    type="date"
+                    value={paymentData.paymentDate}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="salesPrice">Sales Price</Label>
+                  <Input
+                    id="salesPrice"
+                    name="salesPrice"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.salesPrice}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="costPrice">Cost Price</Label>
+                  <Input
+                    id="costPrice"
+                    name="costPrice"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.costPrice}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pendingBalance">Pending Balance</Label>
+                  <Input
+                    id="pendingBalance"
+                    name="pendingBalance"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.pendingBalance}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="refunded">Refunded</Label>
+                  <Input
+                    id="refunded"
+                    name="refunded"
+                    type="number"
+                    step="0.01"
+                    value={paymentData.refunded}
+                    onChange={handlePaymentChange}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Dispute Information */}
+              <div className="mt-6">
+                <h4 className="text-lg font-medium mb-4">Dispute Information (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="disputeCategory">Dispute Category</Label>
+                    <Input
+                      id="disputeCategory"
+                      name="disputeCategory"
+                      value={paymentData.disputeCategory}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="disputeReason">Dispute Reason</Label>
+                    <Input
+                      id="disputeReason"
+                      name="disputeReason"
+                      value={paymentData.disputeReason}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="disputeDate">Dispute Date</Label>
+                    <Input
+                      id="disputeDate"
+                      name="disputeDate"
+                      type="date"
+                      value={paymentData.disputeDate}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="disputeResult">Dispute Result</Label>
+                    <Input
+                      id="disputeResult"
+                      name="disputeResult"
+                      value={paymentData.disputeResult}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="refundDate">Refund Date</Label>
+                    <Input
+                      id="refundDate"
+                      name="refundDate"
+                      type="date"
+                      value={paymentData.refundDate}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="arn">ARN</Label>
+                    <Input
+                      id="arn"
+                      name="arn"
+                      value={paymentData.arn}
+                      onChange={handlePaymentChange}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

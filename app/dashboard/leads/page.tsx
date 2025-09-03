@@ -247,7 +247,7 @@ export default function LeadsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Follow-up scheduled successfully for ${new Date(data.followup.scheduledDate).toLocaleString()}`);
+        alert(`Follow-up scheduled successfully for ${new Date(`${followupData.followupDate}T${followupData.followupTime}`).toLocaleString()}`);
         loadLeads();
       } else {
         const data = await response.json();
@@ -461,7 +461,7 @@ export default function LeadsPage() {
                             <div>
                               <p className="font-medium">{lead.products.length} product(s)</p>
                               <p className="text-gray-500">
-                                {lead.products.slice(0, 2).map(p => p.productName).join(', ')}
+                                {lead.products.slice(0, 2).map(p => p.productName).filter(Boolean).join(', ')}
                                 {lead.products.length > 2 && '...'}
                               </p>
                             </div>
