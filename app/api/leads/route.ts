@@ -181,8 +181,6 @@ export async function POST(request: NextRequest) {
       products: any[];
       billingAddress?: string;
       shippingAddress?: string;
-      mechanicName?: string;
-      contactPhone?: string;
       state?: string;
       zone?: string;
       callType?: string;
@@ -209,6 +207,8 @@ export async function POST(request: NextRequest) {
       updatedBy: string;
       history: any[];
       notes: any[];
+      billingInfo?: any; // Add billingInfo to the type
+      shippingInfo?: any; // Add shippingInfo to the type
     };
 
     // Prepare the initial leadData object without the history field
@@ -224,7 +224,6 @@ export async function POST(request: NextRequest) {
         year: 'numeric',
       }),
       assignedAgent: getAssignedAgent(body.assignedAgent, user),
-      sameShippingInfo: body.sameShippingInfo || false,
       billingInfo: body.billingInfo || undefined,
       shippingInfo: body.shippingInfo || undefined,
       products: processedProducts,
