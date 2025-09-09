@@ -47,6 +47,7 @@ interface Followup {
     name: string;
   };
   notes: string[];
+  scheduledDate?: Date;
 }
 
 export default function FollowupsPage() {
