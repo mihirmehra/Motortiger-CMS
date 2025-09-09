@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const recentNotes: any[] = [];
     
     leadsWithNotes.forEach(lead => {
-      lead.notes.forEach(note => {
+      lead.notes.forEach((note:any) => {
         recentNotes.push({
           _id: note._id,
           content: note.content,
