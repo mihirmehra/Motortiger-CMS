@@ -15,6 +15,11 @@ interface Lead {
   phoneNumber: string;
   productName?: string;
   productAmount?: number;
+  products?: Array<{
+    productName: string;
+    productAmount: number;
+    quantity: number;
+  }>;
   quantity?: number;
 }
 
