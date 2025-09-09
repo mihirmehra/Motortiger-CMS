@@ -11,8 +11,8 @@ export type OrderStatus =
 export interface IVendorOrder {
   date: Date;
   vendorId: string;
-  vendorName: string;
-  vendorLocation: string;
+  shopName: string;
+  vendorAddress: string;
   orderNo: string;
   customerId?: string;
   customerName?: string;
@@ -23,27 +23,32 @@ export interface IVendorOrder {
   grandTotal?: number;
   courierCompany?: string;
   trackingId?: string;
+  productType?: 'engine' | 'transmission' | 'part';
   productName?: string;
   productAmount?: number;
   shippingAddress?: string;
   quantity?: number;
-  vin?: string;
-  mileageQuote?: string;
   yearOfMfg?: string;
   make?: string;
   model?: string;
+  trim?: string;
+  engineSize?: string;
+  // Part-specific fields
+  partType?: 'used' | 'new';
+  partNumber?: string;
+  vin?: string;
+  // Legacy fields
   specification?: string;
   attention?: string;
   warranty?: string;
   miles?: string;
-  recycler?: string;
-  modeOfPaymentToRecycler?: string;
+  mileageQuote?: string;
+  modeOfPayment?: string;
   dateOfBooking?: Date;
   dateOfDelivery?: Date;
   trackingNumber?: string;
   shippingCompany?: string;
-  modeOfPayment?: string;
-  fedexTracking?: string;
+  proofOfDelivery?: string;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
 }
@@ -52,8 +57,8 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
   {
     date: { type: Date, default: Date.now },
     vendorId: { type: String, required: true },
-    vendorName: { type: String, required: true },
-    vendorLocation: { type: String, required: true },
+    shopName: { type: String, required: true },
+    vendorAddress: { type: String, required: true },
     orderNo: { type: String, unique: true, required: true },
     customerId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerName: String,
@@ -75,27 +80,32 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     grandTotal: Number,
     courierCompany: String,
     trackingId: String,
+    productType: { type: String, enum: ['engine', 'transmission', 'part'] },
     productName: String,
     productAmount: Number,
     shippingAddress: String,
     quantity: Number,
-    vin: String,
-    mileageQuote: String,
     yearOfMfg: String,
     make: String,
     model: String,
+    trim: String,
+    engineSize: String,
+    // Part-specific fields
+    partType: { type: String, enum: ['used', 'new'] },
+    partNumber: String,
+    vin: String,
+    // Legacy fields
     specification: String,
     attention: String,
     warranty: String,
     miles: String,
-    recycler: String,
-    modeOfPaymentToRecycler: String,
+    mileageQuote: String,
+    modeOfPayment: String,
     dateOfBooking: Date,
     dateOfDelivery: Date,
     trackingNumber: String,
     shippingCompany: String,
-    modeOfPayment: String,
-    fedexTracking: String,
+    proofOfDelivery: String,
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

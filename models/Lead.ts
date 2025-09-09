@@ -12,33 +12,62 @@ export type LeadStatus =
   | 'Payment Under Process'
   | 'Customer making payment'
   | 'Sale Payment Done'
-  | 'Sale Closed';
+  | 'Sale Closed'
+  | 'Incomplete Information';
+
+export interface IBillingInfo {
+  firstName?: string;
+  lastName?: string;
+  fullAddress?: string;
+  addressType?: 'residential' | 'commercial';
+  country?: string;
+  state?: string;
+  zipCode?: string;
+  phone?: string;
+}
+
+export interface IShippingInfo {
+  firstName?: string;
+  lastName?: string;
+  fullAddress?: string;
+  addressType?: 'residential' | 'commercial';
+  country?: string;
+  state?: string;
+  zipCode?: string;
+  phone?: string;
+}
 
 export interface ILeadProduct {
   productId: string;
+  productType: 'engine' | 'transmission' | 'part';
   productName: string;
   productAmount?: number;
   quantity?: number;
-  vin?: string;
-  mileageQuote?: string;
   yearOfMfg?: string;
   make?: string;
   model?: string;
+  trim?: string;
+  engineSize?: string;
+  // Part-specific fields
+  partType?: 'used' | 'new';
+  partNumber?: string;
+  vin?: string;
+  // Legacy fields for backward compatibility
+  mileageQuote?: string;
   specification?: string;
   attention?: string;
   warranty?: string;
   miles?: string;
   vendorInfo?: {
     vendorId?: string;
-    vendorName?: string;
-    vendorLocation?: string;
-    recycler?: string;
-    modeOfPaymentToRecycler?: string;
+    shopName?: string;
+    address?: string;
+    modeOfPayment?: string;
     dateOfBooking?: Date;
     dateOfDelivery?: Date;
     trackingNumber?: string;
     shippingCompany?: string;
-    fedexTracking?: string;
+    proofOfDelivery?: string; // File path for uploaded document
   };
 }
 
@@ -53,10 +82,14 @@ export interface ILead {
   customerName: string;
   phoneNumber: string;
   alternateNumber?: string;
-  customerEmail: string;
+  customerEmail?: string;
   status: LeadStatus;
   orderStatus?: string;
   assignedAgent: string | mongoose.Types.ObjectId;
+  sameShippingInfo?: boolean;
+  billingInfo?: IBillingInfo;
+  shippingInfo?: IShippingInfo;
+  // Legacy address fields for backward compatibility
   billingAddress?: string;
   shippingAddress?: string;
   mechanicName?: string;
@@ -110,36 +143,64 @@ export interface ILead {
   }>;
 }
 
+const BillingInfoSchema = new Schema<IBillingInfo>({
+  firstName: String,
+  lastName: String,
+  fullAddress: String,
+  addressType: { type: String, enum: ['residential', 'commercial'] },
+  country: String,
+  state: String,
+  zipCode: String,
+  phone: String,
+});
+
+const ShippingInfoSchema = new Schema<IShippingInfo>({
+  firstName: String,
+  lastName: String,
+  fullAddress: String,
+  addressType: { type: String, enum: ['residential', 'commercial'] },
+  country: String,
+  state: String,
+  zipCode: String,
+  phone: String,
+});
+
 const LeadProductSchema = new Schema<ILeadProduct>({
   productId: { type: String, required: true },
+  productType: {
+    type: String,
+    enum: ['engine', 'transmission', 'part'],
+    required: true,
+  },
   productName: { type: String, required: true },
   productAmount: Number,
   quantity: Number,
-  vin: String,
-  mileageQuote: String,
   yearOfMfg: String,
   make: String,
   model: String,
+  trim: String,
+  engineSize: String,
+  // Part-specific fields
+  partType: { type: String, enum: ['used', 'new'] },
+  partNumber: String,
+  vin: String,
+  // Legacy fields
+  mileageQuote: String,
   specification: String,
   attention: String,
   warranty: String,
   miles: String,
   vendorInfo: {
     vendorId: String,
-    vendorName: String,
-    vendorLocation: String,
-    recycler: String,
-    modeOfPaymentToRecycler: String,
+    shopName: String,
+    address: String,
+    modeOfPayment: String,
     dateOfBooking: Date,
     dateOfDelivery: Date,
     trackingNumber: String,
     shippingCompany: String,
-    fedexTracking: String,
-    // Vendor Payment Information
-    paymentPortal: String,
-    modeOfPayment: String,
-    paymentDate: Date,
-  }
+    proofOfDelivery: String,
+  },
 });
 
 const LeadSchema = new Schema(
@@ -154,13 +215,16 @@ const LeadSchema = new Schema(
     customerName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
     alternateNumber: String,
-    customerEmail: { type: String, validate: {
-      validator: function(v: string) {
-        if (!v) return true; // Allow empty email
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    customerEmail: {
+      type: String,
+      validate: {
+        validator: function (v: string) {
+          if (!v) return true; // Allow empty email
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: 'Invalid email format',
       },
-      message: 'Invalid email format'
-    }},
+    },
     status: {
       type: String,
       enum: [
@@ -176,11 +240,16 @@ const LeadSchema = new Schema(
         'Customer making payment',
         'Sale Payment Done',
         'Sale Closed',
+        'Incomplete Information',
       ],
       default: 'New',
     },
     orderStatus: String,
     assignedAgent: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    sameShippingInfo: { type: Boolean, default: false },
+    billingInfo: BillingInfoSchema,
+    shippingInfo: ShippingInfoSchema,
+    // Legacy address fields for backward compatibility
     billingAddress: String,
     shippingAddress: String,
     mechanicName: String,
@@ -190,7 +259,11 @@ const LeadSchema = new Schema(
     callType: String,
     products: [LeadProductSchema],
     modeOfPayment: String,
-    paymentPortal: { type: String, enum: ['EasyPayDirect', 'Authorize.net'] },
+    paymentPortal: { 
+      type: String, 
+      enum: ['EasyPayDirect', 'Authorize.net', ''],
+      default: ''
+    },
     cardNumber: String,
     expiry: String,
     paymentDate: Date,
@@ -219,24 +292,24 @@ const LeadSchema = new Schema(
         notes: String,
       },
     ],
-  notes: [
-    {
-      content: { type: String, required: true },
-      createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-      createdAt: { type: Date, default: Date.now },
-    },
-  ],
-  scheduledFollowups: [
-    {
-      followupType: { type: String, required: true },
-      scheduledDate: { type: Date, required: true },
-      scheduledTime: { type: String, required: true },
-      notes: String,
-      isCompleted: { type: Boolean, default: false },
-      createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-      createdAt: { type: Date, default: Date.now },
-    },
-  ],
+    notes: [
+      {
+        content: { type: String, required: true },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    scheduledFollowups: [
+      {
+        followupType: { type: String, required: true },
+        scheduledDate: { type: Date, required: true },
+        scheduledTime: { type: String, required: true },
+        notes: String,
+        isCompleted: { type: Boolean, default: false },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -248,7 +321,7 @@ LeadSchema.pre('save', function (next) {
   // Calculate total sales price from all products
   if (this.products && this.products.length > 0) {
     this.salesPrice = this.products.reduce((total, product) => {
-      return total + ((product.productAmount || 0) * (product.quantity || 1));
+      return total + (product.productAmount || 0) * (product.quantity || 1);
     }, 0);
   }
 

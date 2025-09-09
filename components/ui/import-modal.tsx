@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Download, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Upload, Download, FileText, AlertCircle } from 'lucide-react';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -18,14 +17,13 @@ interface ImportModalProps {
 export default function ImportModal({ isOpen, onClose, module, onImportComplete }: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [previewData, setPreviewData] = useState<any>(null);
+  const [step, setStep] = useState<'upload' | 'preview' | 'complete'>('upload');
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setError('');
     }
   };
 
@@ -33,8 +31,6 @@ export default function ImportModal({ isOpen, onClose, module, onImportComplete 
     if (!file) return;
 
     setLoading(true);
-    setError('');
-
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -52,12 +48,14 @@ export default function ImportModal({ isOpen, onClose, module, onImportComplete 
       if (response.ok) {
         const data = await response.json();
         setPreviewData(data);
+        setStep('preview');
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to preview file');
+        alert(data.error || 'Failed to preview file');
       }
     } catch (error) {
-      setError('Failed to preview file');
+      console.error('Error previewing file:', error);
+      alert('Failed to preview file');
     } finally {
       setLoading(false);
     }
@@ -67,8 +65,6 @@ export default function ImportModal({ isOpen, onClose, module, onImportComplete 
     if (!file) return;
 
     setLoading(true);
-    setError('');
-
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -85,21 +81,21 @@ export default function ImportModal({ isOpen, onClose, module, onImportComplete 
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Import completed! ${data.imported} records imported successfully.`);
+        setStep('complete');
         onImportComplete();
-        onClose();
       } else {
         const data = await response.json();
-        setError(data.error || 'Import failed');
+        alert(data.error || 'Import failed');
       }
     } catch (error) {
-      setError('Import failed');
+      console.error('Error importing file:', error);
+      alert('Import failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadSample = async () => {
+  const handleDownloadSample = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/import/sample?module=${module}`, {
@@ -120,84 +116,144 @@ export default function ImportModal({ isOpen, onClose, module, onImportComplete 
         document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Download sample failed:', error);
+      console.error('Error downloading sample:', error);
     }
   };
 
+  const handleClose = () => {
+    setFile(null);
+    setPreviewData(null);
+    setStep('upload');
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Import {module.replace('_', ' ').toUpperCase()}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Import {module.replace('_', ' ').toUpperCase()}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {error && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-red-700">{error}</AlertDescription>
-            </Alert>
-          )}
+        {step === 'upload' && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <Button
+                variant="outline"
+                onClick={handleDownloadSample}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download Sample Template
+              </Button>
+              <p className="text-sm text-gray-500 mt-2">
+                Download the sample template to see the required format
+              </p>
+            </div>
 
-          <div>
-            <Label htmlFor="file">Select File</Label>
-            <Input
-              id="file"
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleFileSelect}
-              className="mt-1"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Supported formats: Excel (.xlsx, .xls) and CSV (.csv)
-            </p>
+            <div className="space-y-4">
+              <Label htmlFor="importFile">Select File</Label>
+              <Input
+                id="importFile"
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileSelect}
+                className="mt-1"
+              />
+              <p className="text-sm text-gray-500">
+                Supported formats: Excel (.xlsx, .xls) and CSV (.csv)
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handlePreview}
+                disabled={!file || loading}
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                {loading ? 'Processing...' : 'Preview'}
+              </Button>
+            </div>
           </div>
+        )}
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={downloadSample}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download Sample
-            </Button>
-
-            <Button
-              onClick={handlePreview}
-              disabled={!file || loading}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              Preview Data
-            </Button>
-          </div>
-
-          {previewData && (
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">Preview Results</h4>
-              <div className="text-sm space-y-1">
-                <p>Total rows: {previewData.total}</p>
-                <p className="text-green-600">Valid rows: {previewData.valid.length}</p>
-                <p className="text-red-600">Invalid rows: {previewData.invalid.length}</p>
+        {step === 'preview' && previewData && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{previewData.total}</div>
+                <div className="text-sm text-blue-600">Total Records</div>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{previewData.valid.length}</div>
+                <div className="text-sm text-green-600">Valid Records</div>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{previewData.invalid.length}</div>
+                <div className="text-sm text-red-600">Invalid Records</div>
               </div>
             </div>
-          )}
 
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={!file || loading}
-              className="flex items-center gap-2"
-            >
-              <Upload className="h-4 w-4" />
-              {loading ? 'Importing...' : 'Import Data'}
+            {previewData.invalid.length > 0 && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="font-medium text-red-800">Validation Errors</span>
+                </div>
+                <div className="text-sm text-red-700 max-h-32 overflow-y-auto">
+                  {previewData.invalid.slice(0, 5).map((error: any, index: number) => (
+                    <div key={index} className="mb-1">
+                      Row {error.rowNumber}: {error.errors.join(', ')}
+                    </div>
+                  ))}
+                  {previewData.invalid.length > 5 && (
+                    <div className="text-red-600">
+                      ... and {previewData.invalid.length - 5} more errors
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setStep('upload')}>
+                Back
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={loading || previewData.valid.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {loading ? 'Importing...' : `Import ${previewData.valid.length} Records`}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'complete' && (
+          <div className="space-y-6 text-center">
+            <div className="text-green-600">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-semibold">Import Completed!</h3>
+              <p className="text-sm text-gray-600">
+                Your data has been successfully imported.
+              </p>
+            </div>
+
+            <Button onClick={handleClose} className="w-full">
+              Close
             </Button>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -29,8 +29,8 @@ import ImportModal from '@/components/ui/import-modal';
 interface VendorOrder {
   _id: string;
   orderNo: string;
-  vendorName: string;
-  vendorLocation: string;
+  shopName: string;
+  vendorAddress: string;
   customerName?: string;
   orderStatus: string;
   grandTotal?: number;
@@ -256,8 +256,8 @@ export default function VendorOrdersPage() {
                   {orders.map((order) => (
                     <TableRow key={order._id}>
                       <TableCell className="font-medium">{order.orderNo}</TableCell>
-                      <TableCell>{order.vendorName}</TableCell>
-                      <TableCell>{order.vendorLocation}</TableCell>
+                      <TableCell>{order.shopName}</TableCell>
+                      <TableCell>{order.vendorAddress}</TableCell>
                       <TableCell>{order.customerName || 'N/A'}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(order.orderStatus)}>

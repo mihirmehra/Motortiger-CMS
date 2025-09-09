@@ -10,8 +10,8 @@ import { ArrowLeft, Save } from 'lucide-react';
 
 interface VendorOrder {
   _id: string;
-  vendorName: string;
-  vendorLocation: string;
+  shopName: string;
+  vendorAddress: string;
   orderNo: string;
   customerName?: string;
   orderStatus: string;
@@ -20,10 +20,25 @@ interface VendorOrder {
   taxCollected?: number;
   courierCompany?: string;
   trackingId?: string;
+  productType?: string;
   productName?: string;
   productAmount?: number;
   shippingAddress?: string;
   quantity?: number;
+  yearOfMfg?: string;
+  make?: string;
+  model?: string;
+  trim?: string;
+  engineSize?: string;
+  partType?: string;
+  partNumber?: string;
+  vin?: string;
+  modeOfPayment?: string;
+  dateOfBooking?: string;
+  dateOfDelivery?: string;
+  trackingNumber?: string;
+  shippingCompany?: string;
+  proofOfDelivery?: string;
 }
 
 export default function EditVendorOrderPage() {
@@ -34,8 +49,12 @@ export default function EditVendorOrderPage() {
   const params = useParams();
 
   const statusOptions = [
-    'stage1 (engine pull)', 'stage2 (washing)', 'stage3 (testing)',
-    'stage4 (pack & ready)', 'stage5 (shipping)', 'stage6 (delivered)'
+    'stage1 (engine pull)',
+    'stage2 (washing)',
+    'stage3 (testing)',
+    'stage4 (pack & ready)',
+    'stage5 (shipping)',
+    'stage6 (delivered)',
   ];
 
   useEffect(() => {
@@ -49,8 +68,8 @@ export default function EditVendorOrderPage() {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/vendor-orders/${params.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.ok) {
@@ -77,10 +96,10 @@ export default function EditVendorOrderPage() {
       const response = await fetch(`/api/vendor-orders/${params.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
@@ -97,11 +116,13 @@ export default function EditVendorOrderPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value === '' ? undefined : value
+      [name]: value === '' ? undefined : value,
     }));
   };
 
@@ -132,8 +153,10 @@ export default function EditVendorOrderPage() {
               Back to Order
             </Button>
           </div>
-          
-          <h1 className="text-3xl font-bold text-gray-900">Edit Vendor Order</h1>
+
+          <h1 className="text-3xl font-bold text-gray-900">
+            Edit Vendor Order
+          </h1>
           <p className="text-gray-600">Update vendor order information</p>
         </div>
 
@@ -147,11 +170,11 @@ export default function EditVendorOrderPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="vendorName">Vendor Name *</Label>
+                  <Label htmlFor="shopName">Name of the Shop/Vendor *</Label>
                   <Input
-                    id="vendorName"
-                    name="vendorName"
-                    value={formData.vendorName || ''}
+                    id="shopName"
+                    name="shopName"
+                    value={formData.shopName || ''}
                     onChange={handleChange}
                     required
                     className="mt-1"
@@ -159,11 +182,11 @@ export default function EditVendorOrderPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="vendorLocation">Vendor Location *</Label>
+                  <Label htmlFor="vendorAddress">Address *</Label>
                   <Input
-                    id="vendorLocation"
-                    name="vendorLocation"
-                    value={formData.vendorLocation || ''}
+                    id="vendorAddress"
+                    name="vendorAddress"
+                    value={formData.vendorAddress || ''}
                     onChange={handleChange}
                     required
                     className="mt-1"
@@ -190,8 +213,10 @@ export default function EditVendorOrderPage() {
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {statusOptions.map(status => (
-                      <option key={status} value={status}>{status}</option>
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -237,7 +262,23 @@ export default function EditVendorOrderPage() {
               <CardTitle>Product Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                  <Label htmlFor="productType">Product Type</Label>
+                  <select
+                    id="productType"
+                    name="productType"
+                    value={formData.productType || ''}
+                    onChange={handleChange}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="engine">Engine</option>
+                    <option value="transmission">Transmission</option>
+                    <option value="part">Part</option>
+                  </select>
+                </div>
+
                 <div>
                   <Label htmlFor="productName">Product Name</Label>
                   <Input
@@ -273,6 +314,103 @@ export default function EditVendorOrderPage() {
                     className="mt-1"
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="yearOfMfg">Year of Manufacture</Label>
+                  <Input
+                    id="yearOfMfg"
+                    name="yearOfMfg"
+                    value={formData.yearOfMfg || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="make">Make</Label>
+                  <Input
+                    id="make"
+                    name="make"
+                    value={formData.make || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="model">Model</Label>
+                  <Input
+                    id="model"
+                    name="model"
+                    value={formData.model || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="trim">Trim</Label>
+                  <Input
+                    id="trim"
+                    name="trim"
+                    value={formData.trim || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="engineSize">Engine Size</Label>
+                  <Input
+                    id="engineSize"
+                    name="engineSize"
+                    value={formData.engineSize || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Part-specific fields */}
+                {formData.productType === 'part' && (
+                  <>
+                    <div>
+                      <Label htmlFor="partType">Part Type</Label>
+                      <select
+                        id="partType"
+                        name="partType"
+                        value={formData.partType || ''}
+                        onChange={handleChange}
+                        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select Type</option>
+                        <option value="used">Used</option>
+                        <option value="new">New</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="partNumber">Part Number</Label>
+                      <Input
+                        id="partNumber"
+                        name="partNumber"
+                        value={formData.partNumber || ''}
+                        onChange={handleChange}
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="vin">VIN</Label>
+                      <Input
+                        id="vin"
+                        name="vin"
+                        value={formData.vin || ''}
+                        onChange={handleChange}
+                        className="mt-1"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -283,7 +421,7 @@ export default function EditVendorOrderPage() {
               <CardTitle>Financial Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
                   <Label htmlFor="itemSubtotal">Item Subtotal</Label>
                   <Input
@@ -322,6 +460,41 @@ export default function EditVendorOrderPage() {
                     className="mt-1"
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="modeOfPayment">Mode of Payment</Label>
+                  <Input
+                    id="modeOfPayment"
+                    name="modeOfPayment"
+                    value={formData.modeOfPayment || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="dateOfBooking">Date of Booking</Label>
+                  <Input
+                    id="dateOfBooking"
+                    name="dateOfBooking"
+                    type="date"
+                    value={formData.dateOfBooking || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="dateOfDelivery">Date of Delivery</Label>
+                  <Input
+                    id="dateOfDelivery"
+                    name="dateOfDelivery"
+                    type="date"
+                    value={formData.dateOfDelivery || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -332,7 +505,7 @@ export default function EditVendorOrderPage() {
               <CardTitle>Shipping Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <Label htmlFor="courierCompany">Courier Company</Label>
                   <Input
@@ -350,6 +523,40 @@ export default function EditVendorOrderPage() {
                     id="trackingId"
                     name="trackingId"
                     value={formData.trackingId || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="trackingNumber">Tracking Number</Label>
+                  <Input
+                    id="trackingNumber"
+                    name="trackingNumber"
+                    value={formData.trackingNumber || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="shippingCompany">Shipping Company</Label>
+                  <Input
+                    id="shippingCompany"
+                    name="shippingCompany"
+                    value={formData.shippingCompany || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="proofOfDelivery">Proof of Delivery</Label>
+                  <Input
+                    id="proofOfDelivery"
+                    name="proofOfDelivery"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={handleChange}
                     className="mt-1"
                   />

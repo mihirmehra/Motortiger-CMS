@@ -22,7 +22,10 @@ export async function GET(
 
     const permissions = new PermissionManager(user);
     if (!permissions.canRead('vendor_orders')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     await connectDB();
@@ -32,11 +35,13 @@ export async function GET(
       .populate('updatedBy', 'name');
 
     if (!order) {
-      return NextResponse.json({ error: 'Vendor order not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Vendor order not found' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ order });
-
   } catch (error) {
     console.error('Get vendor order error:', error);
     return NextResponse.json(
@@ -63,14 +68,20 @@ export async function PUT(
 
     const permissions = new PermissionManager(user);
     if (!permissions.canUpdate('vendor_orders')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     await connectDB();
 
     const order = await VendorOrder.findById(params.id);
     if (!order) {
-      return NextResponse.json({ error: 'Vendor order not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Vendor order not found' },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
@@ -87,12 +98,16 @@ export async function PUT(
       userRole: user.role,
       action: 'update',
       module: 'vendor_orders',
-      description: getChangeDescription('update', 'vendor_orders', order.orderNo),
+      description: getChangeDescription(
+        'update',
+        'vendor_orders',
+        order.orderNo
+      ),
       targetId: order._id.toString(),
       targetType: 'VendorOrder',
       changes: { oldValues, newValues: body },
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown'
+      userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
     const updatedOrder = await VendorOrder.findById(order._id)
@@ -101,9 +116,8 @@ export async function PUT(
 
     return NextResponse.json({
       message: 'Vendor order updated successfully',
-      order: updatedOrder
+      order: updatedOrder,
     });
-
   } catch (error) {
     console.error('Update vendor order error:', error);
     return NextResponse.json(
@@ -130,14 +144,20 @@ export async function DELETE(
 
     const permissions = new PermissionManager(user);
     if (!permissions.canDelete('vendor_orders')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     await connectDB();
 
     const order = await VendorOrder.findById(params.id);
     if (!order) {
-      return NextResponse.json({ error: 'Vendor order not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Vendor order not found' },
+        { status: 404 }
+      );
     }
 
     await VendorOrder.findByIdAndDelete(params.id);
@@ -148,15 +168,18 @@ export async function DELETE(
       userRole: user.role,
       action: 'delete',
       module: 'vendor_orders',
-      description: getChangeDescription('delete', 'vendor_orders', order.orderNo),
+      description: getChangeDescription(
+        'delete',
+        'vendor_orders',
+        order.orderNo
+      ),
       targetId: order._id.toString(),
       targetType: 'VendorOrder',
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown'
+      userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
     return NextResponse.json({ message: 'Vendor order deleted successfully' });
-
   } catch (error) {
     console.error('Delete vendor order error:', error);
     return NextResponse.json(

@@ -17,14 +17,20 @@ export async function GET(request: NextRequest) {
 
     const permissions = new PermissionManager(user);
     if (!permissions.canImport('leads')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
     const module = searchParams.get('module');
 
     if (!module) {
-      return NextResponse.json({ error: 'Module is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Module is required' },
+        { status: 400 }
+      );
     }
 
     let sampleData: any[] = [];
@@ -35,18 +41,18 @@ export async function GET(request: NextRequest) {
         sampleData = [
           {
             'Customer Name': 'John Doe',
-            'Email': 'john.doe@example.com',
+            Email: 'john.doe@example.com',
             'Phone Number': '+1234567890',
             'Alternate Number': '+1234567891',
-            'Status': 'New'
+            Status: 'New',
           },
           {
             'Customer Name': 'Jane Smith',
-            'Email': 'jane.smith@example.com',
+            Email: 'jane.smith@example.com',
             'Phone Number': '+1234567892',
             'Alternate Number': '',
-            'Status': 'Connected'
-          }
+            Status: 'Connected',
+          },
         ];
         filename = 'leads_sample';
         break;
@@ -54,13 +60,13 @@ export async function GET(request: NextRequest) {
       case 'vendor_orders':
         sampleData = [
           {
-            'Vendor Name': 'ABC Auto Parts',
-            'Vendor Location': 'New York',
+            'Shop/Vendor Name': 'ABC Auto Parts',
+            'Vendor Address': 'New York',
             'Order Number': 'ORD001',
             'Customer Name': 'John Doe',
             'Product Name': 'Engine Block',
-            'Order Status': 'stage1 (engine pull)'
-          }
+            'Order Status': 'stage1 (engine pull)',
+          },
         ];
         filename = 'vendor_orders_sample';
         break;
@@ -71,8 +77,8 @@ export async function GET(request: NextRequest) {
             'Customer Name': 'John Doe',
             'Mode of Payment': 'Credit Card',
             'Sales Price': '1500.00',
-            'Payment Date': '2024-01-15'
-          }
+            'Payment Date': '2024-01-15',
+          },
         ];
         filename = 'payment_records_sample';
         break;
@@ -83,14 +89,17 @@ export async function GET(request: NextRequest) {
 
     const fileBuffer = await ExportService.exportToExcel(sampleData, filename);
 
-    return new NextResponse(fileBuffer, {
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${filename}.xlsx"`,
-        'Content-Length': fileBuffer.length.toString()
-      }
-    });
+    // Convert Buffer to Uint8Array for NextResponse
+    const fileArray = new Uint8Array(fileBuffer);
 
+    return new NextResponse(fileArray, {
+      headers: {
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${filename}.xlsx"`,
+        'Content-Length': fileArray.length.toString(),
+      },
+    });
   } catch (error) {
     console.error('Sample download error:', error);
     return NextResponse.json(

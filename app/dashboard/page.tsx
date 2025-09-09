@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { 
   FileText, 
   ShoppingCart, 
   CreditCard, 
   Activity,
   TrendingUp,
-  Target
+  Target,
+  MessageSquare,
+  Plus
 } from 'lucide-react';
-
+import NotesModal from '@/components/ui/notes-modal';
 
 interface DashboardStats {
   totalLeads: number;
@@ -24,10 +28,26 @@ interface DashboardStats {
   completedPayments: number;
 }
 
+interface RecentNote {
+  _id: string;
+  content: string;
+  createdAt: string;
+  createdBy: {
+    name: string;
+    email: string;
+  };
+  leadNumber: string;
+  customerName: string;
+  leadId: string;
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentNotes, setRecentNotes] = useState<RecentNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -38,6 +58,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadDashboardStats();
+    loadRecentNotes();
   }, []);
 
   const loadDashboardStats = async () => {
@@ -58,6 +79,28 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadRecentNotes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/notes/recent', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecentNotes(data.notes || []);
+      }
+    } catch (error) {
+      console.error('Failed to load recent notes:', error);
+    }
+  };
+
+  const handleCardClick = (path: string) => {
+    router.push(path);
   };
 
   if (loading) {
@@ -101,7 +144,10 @@ export default function Dashboard() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border-l-4 border-l-blue-500">
+          <Card 
+            className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => handleCardClick('/dashboard/leads')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -114,7 +160,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-green-500">
+          <Card 
+            className="border-l-4 border-l-green-500 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => handleCardClick('/dashboard/sales')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -127,7 +176,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-orange-500">
+          <Card 
+            className="border-l-4 border-l-orange-500 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => handleCardClick('/dashboard/orders')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4" />
@@ -140,7 +192,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-purple-500">
+          <Card 
+            className="border-l-4 border-l-purple-500 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => handleCardClick('/dashboard/payments')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
@@ -155,7 +210,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Recent Activity */}
+      {/* Recent Activity and Notes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
@@ -193,37 +248,67 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Quick Stats
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Recent Notes
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setShowNotesModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Note
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {stats && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Conversion Rate</span>
-                  <span className="font-medium">
-                    {stats.totalLeads > 0 ? ((stats.totalSales / stats.totalLeads) * 100).toFixed(1) : 0}%
-                  </span>
+            <div className="space-y-4 max-h-80 overflow-y-auto">
+              {recentNotes.length > 0 ? (
+                recentNotes.map((note, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-sm font-medium text-blue-600">
+                        {note.leadNumber}
+                      </p>
+                      <span className="text-xs text-gray-500">
+                        {new Date(note.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 mb-1">{note.content}</p>
+                    <p className="text-xs text-gray-500">
+                      by {note.createdBy?.name} • {note.customerName}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No recent notes</p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Order Completion</span>
-                  <span className="font-medium">
-                    {stats.totalOrders > 0 ? ((stats.completedOrders / stats.totalOrders) * 100).toFixed(1) : 0}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Payment Success</span>
-                  <span className="font-medium">
-                    {stats.totalPayments > 0 ? ((stats.completedPayments / stats.totalPayments) * 100).toFixed(1) : 0}%
-                  </span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Fixed Add Notes Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setShowNotesModal(true)}
+          className="h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg flex items-center justify-center"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* Notes Modal */}
+      <NotesModal
+        isOpen={showNotesModal}
+        onClose={() => setShowNotesModal(false)}
+        onNoteAdded={loadRecentNotes}
+      />
     </div>
   );
 }

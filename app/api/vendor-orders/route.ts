@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
 
     const permissions = new PermissionManager(user);
     if (!permissions.canRead('vendor_orders')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     await connectDB();
@@ -37,14 +40,14 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       (filter as any).$and = [
-        ...(((filter as any).$and || [])),
+        ...((filter as any).$and || []),
         {
           $or: [
             { vendorName: { $regex: search, $options: 'i' } },
             { orderNo: { $regex: search, $options: 'i' } },
-            { customerName: { $regex: search, $options: 'i' } }
-          ]
-        }
+            { customerName: { $regex: search, $options: 'i' } },
+          ],
+        },
       ];
     }
 
@@ -67,10 +70,9 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
-
   } catch (error) {
     console.error('Get vendor orders error:', error);
     return NextResponse.json(
@@ -94,7 +96,10 @@ export async function POST(request: NextRequest) {
 
     const permissions = new PermissionManager(user);
     if (!permissions.canCreate('vendor_orders')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -113,8 +118,10 @@ export async function POST(request: NextRequest) {
       ...body,
       orderNo: body.orderNo || generateOrderNumber(),
       vendorId: body.vendorId || generateVendorId(),
+      shopName: body.shopName,
+      vendorAddress: body.vendorAddress,
       createdBy: user.id,
-      updatedBy: user.id
+      updatedBy: user.id,
     };
 
     const order = new VendorOrder(orderData);
@@ -126,12 +133,16 @@ export async function POST(request: NextRequest) {
       userRole: user.role,
       action: 'create',
       module: 'vendor_orders',
-      description: getChangeDescription('create', 'vendor_orders', order.orderNo),
+      description: getChangeDescription(
+        'create',
+        'vendor_orders',
+        order.orderNo
+      ),
       targetId: order._id.toString(),
       targetType: 'VendorOrder',
       changes: orderData,
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown'
+      userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
     const populatedOrder = await VendorOrder.findById(order._id)
@@ -142,7 +153,6 @@ export async function POST(request: NextRequest) {
       { message: 'Vendor order created successfully', order: populatedOrder },
       { status: 201 }
     );
-
   } catch (error) {
     console.error('Create vendor order error:', error);
     return NextResponse.json(

@@ -36,7 +36,11 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     customerId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerName: { type: String, required: true },
     modeOfPayment: { type: String, required: true },
-    paymentPortal: { type: String, enum: ['EasyPayDirect', 'Authorize.net'] },
+    paymentPortal: { 
+      type: String, 
+      enum: ['EasyPayDirect', 'Authorize.net', ''],
+      default: ''
+    },
     cardNumber: String,
     expiry: String,
     paymentDate: { type: Date, required: true },

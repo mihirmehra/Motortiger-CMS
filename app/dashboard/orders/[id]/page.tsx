@@ -10,8 +10,8 @@ import { ArrowLeft, Edit } from 'lucide-react';
 interface VendorOrder {
   _id: string;
   orderNo: string;
-  vendorName: string;
-  vendorLocation: string;
+  shopName: string;
+  vendorAddress: string;
   customerName?: string;
   orderStatus: string;
   itemSubtotal?: number;
@@ -20,10 +20,25 @@ interface VendorOrder {
   grandTotal?: number;
   courierCompany?: string;
   trackingId?: string;
+  productType?: string;
   productName?: string;
   productAmount?: number;
   shippingAddress?: string;
   quantity?: number;
+  yearOfMfg?: string;
+  make?: string;
+  model?: string;
+  trim?: string;
+  engineSize?: string;
+  partType?: string;
+  partNumber?: string;
+  vin?: string;
+  modeOfPayment?: string;
+  dateOfBooking?: string;
+  dateOfDelivery?: string;
+  trackingNumber?: string;
+  shippingCompany?: string;
+  proofOfDelivery?: string;
   createdAt: string;
   createdBy: {
     name: string;
@@ -44,7 +59,7 @@ export default function VendorOrderDetailPage() {
       'stage3 (testing)': 'bg-yellow-100 text-yellow-800',
       'stage4 (pack & ready)': 'bg-blue-100 text-blue-800',
       'stage5 (shipping)': 'bg-purple-100 text-purple-800',
-      'stage6 (delivered)': 'bg-green-100 text-green-800'
+      'stage6 (delivered)': 'bg-green-100 text-green-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -65,8 +80,8 @@ export default function VendorOrderDetailPage() {
 
       const response = await fetch(`/api/vendor-orders/${params.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.ok) {
@@ -100,7 +115,10 @@ export default function VendorOrderDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Order not found</p>
-          <Button onClick={() => router.push('/dashboard/orders')} className="mt-4">
+          <Button
+            onClick={() => router.push('/dashboard/orders')}
+            className="mt-4"
+          >
             Back to Orders
           </Button>
         </div>
@@ -124,13 +142,15 @@ export default function VendorOrderDetailPage() {
               Back to Orders
             </Button>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Order Details</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Order Details
+              </h1>
               <p className="text-gray-600">Order #{order.orderNo}</p>
             </div>
-            
+
             <Button
               onClick={() => router.push(`/dashboard/orders/${order._id}/edit`)}
               className="flex items-center gap-2"
@@ -151,15 +171,21 @@ export default function VendorOrderDetailPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Vendor Name</label>
-                    <p className="text-lg font-semibold">{order.vendorName}</p>
+                    <label className="text-sm font-medium text-gray-500">
+                      Shop/Vendor Name
+                    </label>
+                    <p className="text-lg font-semibold">{order.shopName}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Vendor Location</label>
-                    <p className="text-lg">{order.vendorLocation}</p>
+                    <label className="text-sm font-medium text-gray-500">
+                      Address
+                    </label>
+                    <p className="text-lg">{order.vendorAddress}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Order Status</label>
+                    <label className="text-sm font-medium text-gray-500">
+                      Order Status
+                    </label>
                     <div className="mt-1">
                       <Badge className={getStatusColor(order.orderStatus)}>
                         {order.orderStatus}
@@ -178,12 +204,16 @@ export default function VendorOrderDetailPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Customer Name</label>
+                      <label className="text-sm font-medium text-gray-500">
+                        Customer Name
+                      </label>
                       <p className="text-lg">{order.customerName}</p>
                     </div>
                     {order.shippingAddress && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Shipping Address</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Shipping Address
+                        </label>
                         <p className="text-lg">{order.shippingAddress}</p>
                       </div>
                     )}
@@ -198,23 +228,103 @@ export default function VendorOrderDetailPage() {
                   <CardTitle>Product Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {order.productType && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Product Type
+                        </label>
+                        <p className="text-lg capitalize">{order.productType}</p>
+                      </div>
+                    )}
                     {order.productName && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Product Name</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Product Name
+                        </label>
                         <p className="text-lg">{order.productName}</p>
                       </div>
                     )}
                     {order.productAmount && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Product Amount</label>
-                        <p className="text-lg font-semibold">${order.productAmount.toLocaleString()}</p>
+                        <label className="text-sm font-medium text-gray-500">
+                          Product Amount
+                        </label>
+                        <p className="text-lg font-semibold">
+                          ${order.productAmount.toLocaleString()}
+                        </p>
                       </div>
                     )}
                     {order.quantity && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Quantity</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Quantity
+                        </label>
                         <p className="text-lg">{order.quantity}</p>
+                      </div>
+                    )}
+                    {order.yearOfMfg && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Year
+                        </label>
+                        <p className="text-lg">{order.yearOfMfg}</p>
+                      </div>
+                    )}
+                    {order.make && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Make
+                        </label>
+                        <p className="text-lg">{order.make}</p>
+                      </div>
+                    )}
+                    {order.model && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Model
+                        </label>
+                        <p className="text-lg">{order.model}</p>
+                      </div>
+                    )}
+                    {order.trim && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Trim
+                        </label>
+                        <p className="text-lg">{order.trim}</p>
+                      </div>
+                    )}
+                    {order.engineSize && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Engine Size
+                        </label>
+                        <p className="text-lg">{order.engineSize}</p>
+                      </div>
+                    )}
+                    {order.partType && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Part Type
+                        </label>
+                        <p className="text-lg capitalize">{order.partType}</p>
+                      </div>
+                    )}
+                    {order.partNumber && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Part Number
+                        </label>
+                        <p className="text-lg">{order.partNumber}</p>
+                      </div>
+                    )}
+                    {order.vin && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          VIN
+                        </label>
+                        <p className="text-lg font-mono">{order.vin}</p>
                       </div>
                     )}
                   </div>
@@ -222,7 +332,10 @@ export default function VendorOrderDetailPage() {
               </Card>
             )}
 
-            {(order.itemSubtotal || order.shippingHandling || order.taxCollected || order.grandTotal) && (
+            {(order.itemSubtotal ||
+              order.shippingHandling ||
+              order.taxCollected ||
+              order.grandTotal) && (
               <Card>
                 <CardHeader>
                   <CardTitle>Financial Information</CardTitle>
@@ -231,26 +344,42 @@ export default function VendorOrderDetailPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {order.itemSubtotal && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Item Subtotal</label>
-                        <p className="text-lg">${order.itemSubtotal.toLocaleString()}</p>
+                        <label className="text-sm font-medium text-gray-500">
+                          Item Subtotal
+                        </label>
+                        <p className="text-lg">
+                          ${order.itemSubtotal.toLocaleString()}
+                        </p>
                       </div>
                     )}
                     {order.shippingHandling && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Shipping & Handling</label>
-                        <p className="text-lg">${order.shippingHandling.toLocaleString()}</p>
+                        <label className="text-sm font-medium text-gray-500">
+                          Shipping & Handling
+                        </label>
+                        <p className="text-lg">
+                          ${order.shippingHandling.toLocaleString()}
+                        </p>
                       </div>
                     )}
                     {order.taxCollected && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Tax Collected</label>
-                        <p className="text-lg">${order.taxCollected.toLocaleString()}</p>
+                        <label className="text-sm font-medium text-gray-500">
+                          Tax Collected
+                        </label>
+                        <p className="text-lg">
+                          ${order.taxCollected.toLocaleString()}
+                        </p>
                       </div>
                     )}
                     {order.grandTotal && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Grand Total</label>
-                        <p className="text-lg font-bold text-green-600">${order.grandTotal.toLocaleString()}</p>
+                        <label className="text-sm font-medium text-gray-500">
+                          Grand Total
+                        </label>
+                        <p className="text-lg font-bold text-green-600">
+                          ${order.grandTotal.toLocaleString()}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -264,17 +393,69 @@ export default function VendorOrderDetailPage() {
                   <CardTitle>Shipping Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {order.courierCompany && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Courier Company</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Courier Company
+                        </label>
                         <p className="text-lg">{order.courierCompany}</p>
                       </div>
                     )}
                     {order.trackingId && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Tracking ID</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Tracking ID
+                        </label>
                         <p className="text-lg font-mono">{order.trackingId}</p>
+                      </div>
+                    )}
+                    {order.trackingNumber && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Tracking Number
+                        </label>
+                        <p className="text-lg font-mono">{order.trackingNumber}</p>
+                      </div>
+                    )}
+                    {order.shippingCompany && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Shipping Company
+                        </label>
+                        <p className="text-lg">{order.shippingCompany}</p>
+                      </div>
+                    )}
+                    {order.proofOfDelivery && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Proof of Delivery
+                        </label>
+                        <p className="text-lg font-mono">{order.proofOfDelivery}</p>
+                      </div>
+                    )}
+                    {order.modeOfPayment && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Mode of Payment
+                        </label>
+                        <p className="text-lg">{order.modeOfPayment}</p>
+                      </div>
+                    )}
+                    {order.dateOfBooking && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Date of Booking
+                        </label>
+                        <p className="text-lg">{new Date(order.dateOfBooking).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {order.dateOfDelivery && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Date of Delivery
+                        </label>
+                        <p className="text-lg">{new Date(order.dateOfDelivery).toLocaleDateString()}</p>
                       </div>
                     )}
                   </div>
@@ -291,17 +472,27 @@ export default function VendorOrderDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Order Number</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    Order Number
+                  </label>
                   <p className="text-sm font-mono">{order.orderNo}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Created Date</label>
-                  <p className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <label className="text-sm font-medium text-gray-500">
+                    Created Date
+                  </label>
+                  <p className="text-sm">
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Created By</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    Created By
+                  </label>
                   <p className="text-sm">{order.createdBy?.name}</p>
-                  <p className="text-xs text-gray-500">{order.createdBy?.email}</p>
+                  <p className="text-xs text-gray-500">
+                    {order.createdBy?.email}
+                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -1,8 +1,16 @@
 import * as XLSX from 'xlsx';
-import { validateData, leadSchema, vendorOrderSchema, paymentRecordSchema } from './validation';
+import {
+  validateData,
+  leadSchema,
+  vendorOrderSchema,
+  paymentRecordSchema,
+} from './validation';
 
 export class ImportService {
-  static async processExcelFile(buffer: Buffer, sheetName?: string): Promise<any[]> {
+  static async processExcelFile(
+    buffer: Buffer,
+    sheetName?: string
+  ): Promise<any[]> {
     const workbook = XLSX.read(buffer);
     const worksheet = workbook.Sheets[sheetName || workbook.SheetNames[0]];
     const data = XLSX.utils.sheet_to_json(worksheet);
@@ -11,12 +19,12 @@ export class ImportService {
 
   static async processCSVFile(csvContent: string): Promise<any[]> {
     const lines = csvContent.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
+    const headers = lines[0].split(',').map((h) => h.trim());
     const data = [];
 
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim()) {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = lines[i].split(',').map((v) => v.trim());
         const row: any = {};
         headers.forEach((header, index) => {
           row[header] = values[index] || '';
@@ -35,14 +43,14 @@ export class ImportService {
     data.forEach((item, index) => {
       const mappedData = this.mapLeadFields(item);
       const validation = validateData(leadSchema, mappedData);
-      
+
       if (validation.success) {
         valid.push({ ...mappedData, rowNumber: index + 2 });
       } else {
-        invalid.push({ 
-          data: item, 
-          errors: validation.errors, 
-          rowNumber: index + 2 
+        invalid.push({
+          data: item,
+          errors: validation.errors,
+          rowNumber: index + 2,
         });
       }
     });
@@ -50,21 +58,24 @@ export class ImportService {
     return { valid, invalid };
   }
 
-  static validateVendorOrderData(data: any[]): { valid: any[]; invalid: any[] } {
+  static validateVendorOrderData(data: any[]): {
+    valid: any[];
+    invalid: any[];
+  } {
     const valid: any[] = [];
     const invalid: any[] = [];
 
     data.forEach((item, index) => {
       const mappedData = this.mapVendorOrderFields(item);
       const validation = validateData(vendorOrderSchema, mappedData);
-      
+
       if (validation.success) {
         valid.push({ ...mappedData, rowNumber: index + 2 });
       } else {
-        invalid.push({ 
-          data: item, 
-          errors: validation.errors, 
-          rowNumber: index + 2 
+        invalid.push({
+          data: item,
+          errors: validation.errors,
+          rowNumber: index + 2,
         });
       }
     });
@@ -79,14 +90,14 @@ export class ImportService {
     data.forEach((item, index) => {
       const mappedData = this.mapPaymentFields(item);
       const validation = validateData(paymentRecordSchema, mappedData);
-      
+
       if (validation.success) {
         valid.push({ ...mappedData, rowNumber: index + 2 });
       } else {
-        invalid.push({ 
-          data: item, 
-          errors: validation.errors, 
-          rowNumber: index + 2 
+        invalid.push({
+          data: item,
+          errors: validation.errors,
+          rowNumber: index + 2,
         });
       }
     });
@@ -101,20 +112,23 @@ export class ImportService {
       customerEmail: data['Email'] || data.customerEmail || '',
       alternateNumber: data['Alternate Number'] || data.alternateNumber || '',
       productName: data['Product Name'] || data.productName || '',
-      productAmount: this.parseNumber(data['Product Amount'] || data.productAmount),
+      productAmount: this.parseNumber(
+        data['Product Amount'] || data.productAmount
+      ),
       quantity: this.parseNumber(data['Quantity'] || data.quantity),
-      status: data['Status'] || data.status || 'New'
+      status: data['Status'] || data.status || 'New',
     };
   }
 
   private static mapVendorOrderFields(data: any): any {
     return {
-      vendorName: data['Vendor Name'] || data.vendorName || '',
-      vendorLocation: data['Vendor Location'] || data.vendorLocation || '',
+      shopName: data['Shop/Vendor Name'] || data.shopName || data.vendorName || '',
+      vendorAddress: data['Vendor Address'] || data.vendorAddress || data.vendorLocation || '',
       orderNo: data['Order Number'] || data.orderNo || '',
       customerName: data['Customer Name'] || data.customerName || '',
       productName: data['Product Name'] || data.productName || '',
-      orderStatus: data['Order Status'] || data.orderStatus || 'stage1 (engine pull)'
+      orderStatus:
+        data['Order Status'] || data.orderStatus || 'stage1 (engine pull)',
     };
   }
 
@@ -123,7 +137,8 @@ export class ImportService {
       customerName: data['Customer Name'] || data.customerName || '',
       modeOfPayment: data['Mode of Payment'] || data.modeOfPayment || '',
       salesPrice: this.parseNumber(data['Sales Price'] || data.salesPrice),
-      paymentDate: data['Payment Date'] || data.paymentDate || new Date().toISOString()
+      paymentDate:
+        data['Payment Date'] || data.paymentDate || new Date().toISOString(),
     };
   }
 

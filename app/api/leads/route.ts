@@ -8,11 +8,17 @@ import { generateUniqueId, generateLeadNumber } from '@/utils/idGenerator';
 import { logActivity, getChangeDescription } from '@/utils/activityLogger';
 import PaymentRecord from '@/models/PaymentRecord';
 import VendorOrder from '@/models/VendorOrder';
-import { generatePaymentId, generateOrderNumber, generateVendorId } from '@/utils/idGenerator';
+import {
+  generatePaymentId,
+  generateOrderNumber,
+  generateVendorId,
+} from '@/utils/idGenerator';
 
 function generateProductId(): string {
   const timestamp = Date.now().toString();
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0');
   return `PROD${timestamp.slice(-6)}${random}`;
 }
 
@@ -30,7 +36,10 @@ export async function GET(request: NextRequest) {
 
     const permissions = new PermissionManager(user);
     if (!permissions.canRead('leads')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     await connectDB();
@@ -47,15 +56,15 @@ export async function GET(request: NextRequest) {
     // Add search filter
     if (search) {
       (filter as any).$and = [
-        ...(((filter as any).$and || [])),
+        ...((filter as any).$and || []),
         {
           $or: [
             { customerName: { $regex: search, $options: 'i' } },
             { customerEmail: { $regex: search, $options: 'i' } },
             { phoneNumber: { $regex: search, $options: 'i' } },
-            { leadNumber: { $regex: search, $options: 'i' } }
-          ]
-        }
+            { leadNumber: { $regex: search, $options: 'i' } },
+          ],
+        },
       ];
     }
 
@@ -81,10 +90,9 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
-
   } catch (error) {
     console.error('Get leads error:', error);
     return NextResponse.json(
@@ -108,7 +116,10 @@ export async function POST(request: NextRequest) {
 
     const permissions = new PermissionManager(user);
     if (!permissions.canCreate('leads')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -127,29 +138,34 @@ export async function POST(request: NextRequest) {
     // Process products data
     const processedProducts = (body.products || []).map((product: any) => ({
       productId: product.productId || generateProductId(),
+      productType: product.productType || 'engine',
       productName: product.productName || '',
       productAmount: product.productAmount || undefined,
       quantity: product.quantity || 1,
-      vin: product.vin || undefined,
-      mileageQuote: product.mileageQuote || undefined,
       yearOfMfg: product.yearOfMfg || undefined,
       make: product.make || undefined,
       model: product.model || undefined,
-      specification: product.specification || undefined,
-      attention: product.attention || undefined,
-      warranty: product.warranty || undefined,
-      miles: product.miles || undefined,
-      vendorInfo: product.vendorInfo ? {
-        vendorName: product.vendorInfo.vendorName || undefined,
-        vendorLocation: product.vendorInfo.vendorLocation || undefined,
-        recycler: product.vendorInfo.recycler || undefined,
-        modeOfPaymentToRecycler: product.vendorInfo.modeOfPaymentToRecycler || undefined,
-        dateOfBooking: product.vendorInfo.dateOfBooking ? new Date(product.vendorInfo.dateOfBooking) : undefined,
-        dateOfDelivery: product.vendorInfo.dateOfDelivery ? new Date(product.vendorInfo.dateOfDelivery) : undefined,
-        trackingNumber: product.vendorInfo.trackingNumber || undefined,
-        shippingCompany: product.vendorInfo.shippingCompany || undefined,
-        fedexTracking: product.vendorInfo.fedexTracking || undefined,
-      } : undefined
+      trim: product.trim || undefined,
+      engineSize: product.engineSize || undefined,
+      partType: product.partType || undefined,
+      partNumber: product.partNumber || undefined,
+      vin: product.vin || undefined,
+      vendorInfo: product.vendorInfo
+        ? {
+            shopName: product.vendorInfo.shopName || undefined,
+            address: product.vendorInfo.address || undefined,
+            modeOfPayment: product.vendorInfo.modeOfPayment || undefined,
+            dateOfBooking: product.vendorInfo.dateOfBooking
+              ? new Date(product.vendorInfo.dateOfBooking)
+              : undefined,
+            dateOfDelivery: product.vendorInfo.dateOfDelivery
+              ? new Date(product.vendorInfo.dateOfDelivery)
+              : undefined,
+            trackingNumber: product.vendorInfo.trackingNumber || undefined,
+            shippingCompany: product.vendorInfo.shippingCompany || undefined,
+            proofOfDelivery: product.vendorInfo.proofOfDelivery || undefined,
+          }
+        : undefined,
     }));
 
     // Define a type for leadData to avoid implicit any and self-reference
@@ -194,61 +210,62 @@ export async function POST(request: NextRequest) {
       history: any[];
       notes: any[];
     };
-    
-        // Prepare the initial leadData object without the history field
-        const leadDataBase: Omit<LeadDataType, 'history'> = {
-          customerName: body.customerName,
-          customerEmail: body.customerEmail || undefined,
-          phoneNumber: body.phoneNumber,
-          alternateNumber: body.alternateNumber || undefined,
-          leadId: generateUniqueId('LEAD_'),
-          leadNumber: generateLeadNumber(),
-          month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-          assignedAgent: getAssignedAgent(body.assignedAgent, user),
-          products: processedProducts,
-          billingAddress: body.billingAddress || undefined,
-          shippingAddress: body.shippingAddress || undefined,
-          mechanicName: body.mechanicName || undefined,
-          contactPhone: body.contactPhone || undefined,
-          state: body.state || undefined,
-          zone: body.zone || undefined,
-          callType: body.callType || undefined,
-          status: body.status || 'New',
-          // Payment fields
-          modeOfPayment: body.modeOfPayment || undefined,
-          paymentPortal: body.paymentPortal || undefined,
-          cardNumber: body.cardNumber || undefined,
-          expiry: body.expiry || undefined,
-          paymentDate: body.paymentDate ? new Date(body.paymentDate) : undefined,
-          salesPrice: body.salesPrice || undefined,
-          pendingBalance: body.pendingBalance || undefined,
-          costPrice: body.costPrice || undefined,
-          refunded: body.refunded || undefined,
-          disputeCategory: body.disputeCategory || undefined,
-          disputeReason: body.disputeReason || undefined,
-          disputeDate: body.disputeDate ? new Date(body.disputeDate) : undefined,
-          disputeResult: body.disputeResult || undefined,
-          refundDate: body.refundDate ? new Date(body.refundDate) : undefined,
-          refundTAT: body.refundTAT || undefined,
-          arn: body.arn || undefined,
-          refundCredited: body.refundCredited || undefined,
-          chargebackAmount: body.chargebackAmount || undefined,
-          createdBy: user.id,
-          updatedBy: user.id,
-          notes: []
-        };
-    
-        // Now create leadData with the history field referencing leadDataBase
-        const leadData: LeadDataType = {
-          ...leadDataBase,
-          history: [{
-            action: 'created',
-            changes: { ...leadDataBase },
-            performedBy: user.id,
-            timestamp: new Date(),
-            notes: 'Lead created'
-          }]
-        };
+
+    // Prepare the initial leadData object without the history field
+    const leadDataBase: Omit<LeadDataType, 'history'> = {
+      customerName: body.customerName,
+      customerEmail: body.customerEmail || undefined,
+      phoneNumber: body.phoneNumber,
+      alternateNumber: body.alternateNumber || undefined,
+      leadId: generateUniqueId('LEAD_'),
+      leadNumber: generateLeadNumber(),
+      month: new Date().toLocaleString('default', {
+        month: 'long',
+        year: 'numeric',
+      }),
+      assignedAgent: getAssignedAgent(body.assignedAgent, user),
+      sameShippingInfo: body.sameShippingInfo || false,
+      billingInfo: body.billingInfo || undefined,
+      shippingInfo: body.shippingInfo || undefined,
+      products: processedProducts,
+      status: body.status || 'New',
+      // Payment fields
+      modeOfPayment: body.modeOfPayment || undefined,
+      paymentPortal: body.paymentPortal || undefined,
+      cardNumber: body.cardNumber || undefined,
+      expiry: body.expiry || undefined,
+      paymentDate: body.paymentDate ? new Date(body.paymentDate) : undefined,
+      salesPrice: body.salesPrice || undefined,
+      pendingBalance: body.pendingBalance || undefined,
+      costPrice: body.costPrice || undefined,
+      refunded: body.refunded || undefined,
+      disputeCategory: body.disputeCategory || undefined,
+      disputeReason: body.disputeReason || undefined,
+      disputeDate: body.disputeDate ? new Date(body.disputeDate) : undefined,
+      disputeResult: body.disputeResult || undefined,
+      refundDate: body.refundDate ? new Date(body.refundDate) : undefined,
+      refundTAT: body.refundTAT || undefined,
+      arn: body.arn || undefined,
+      refundCredited: body.refundCredited || undefined,
+      chargebackAmount: body.chargebackAmount || undefined,
+      createdBy: user.id,
+      updatedBy: user.id,
+      notes: [],
+    };
+
+    // Now create leadData with the history field referencing leadDataBase
+    const leadData: LeadDataType = {
+      ...leadDataBase,
+      history: [
+        {
+          action: 'created',
+          changes: { ...leadDataBase },
+          performedBy: user.id,
+          timestamp: new Date(),
+          notes: 'Lead created',
+        },
+      ],
+    };
 
     const lead = new Lead(leadData);
     await lead.save();
@@ -279,7 +296,7 @@ export async function POST(request: NextRequest) {
         chargebackAmount: body.chargebackAmount,
         paymentStatus: 'pending',
         createdBy: user.id,
-        updatedBy: user.id
+        updatedBy: user.id,
       };
 
       const payment = new PaymentRecord(paymentData);
@@ -288,33 +305,38 @@ export async function POST(request: NextRequest) {
 
     // Create vendor orders for products with vendor information
     for (const product of processedProducts) {
-      if (product.vendorInfo && (product.vendorInfo.vendorName || product.vendorInfo.vendorLocation)) {
+      if (
+        product.vendorInfo &&
+        (product.vendorInfo.shopName || product.vendorInfo.address)
+      ) {
         const vendorOrderData = {
           vendorId: generateVendorId(),
-          vendorName: product.vendorInfo.vendorName || 'Not specified',
-          vendorLocation: product.vendorInfo.vendorLocation || 'Not specified',
+          shopName: product.vendorInfo.shopName || 'Not specified',
+          vendorAddress: product.vendorInfo.address || 'Not specified',
           orderNo: generateOrderNumber(),
           customerId: lead._id,
           customerName: lead.customerName,
           orderStatus: 'stage1 (engine pull)',
+          productType: product.productType,
           productName: product.productName,
           productAmount: product.productAmount,
           quantity: product.quantity,
-          vin: product.vin,
-          mileageQuote: product.mileageQuote,
           yearOfMfg: product.yearOfMfg,
           make: product.make,
           model: product.model,
-          specification: product.specification,
-          recycler: product.vendorInfo.recycler,
-          modeOfPaymentToRecycler: product.vendorInfo.modeOfPaymentToRecycler,
+          trim: product.trim,
+          engineSize: product.engineSize,
+          partType: product.partType,
+          partNumber: product.partNumber,
+          vin: product.vin,
+          modeOfPayment: product.vendorInfo.modeOfPayment,
           dateOfBooking: product.vendorInfo.dateOfBooking,
           dateOfDelivery: product.vendorInfo.dateOfDelivery,
           trackingNumber: product.vendorInfo.trackingNumber,
           shippingCompany: product.vendorInfo.shippingCompany,
-          fedexTracking: product.vendorInfo.fedexTracking,
+          proofOfDelivery: product.vendorInfo.proofOfDelivery,
           createdBy: user.id,
-          updatedBy: user.id
+          updatedBy: user.id,
         };
 
         const vendorOrder = new VendorOrder(vendorOrderData);
@@ -340,7 +362,7 @@ export async function POST(request: NextRequest) {
       targetType: 'Lead',
       changes: leadData,
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown'
+      userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
     const populatedLead = await Lead.findById(lead._id)
@@ -352,7 +374,6 @@ export async function POST(request: NextRequest) {
       { message: 'Lead created successfully', lead: populatedLead },
       { status: 201 }
     );
-
   } catch (error) {
     console.error('Create lead error:', error);
     return NextResponse.json(
@@ -379,7 +400,10 @@ function getAssignedAgent(requestedAgent: string, currentUser: any): string {
       return requestedAgent;
     }
     // Check if requested agent is in manager's assigned agents
-    if (currentUser.assignedAgents && currentUser.assignedAgents.includes(requestedAgent)) {
+    if (
+      currentUser.assignedAgents &&
+      currentUser.assignedAgents.includes(requestedAgent)
+    ) {
       return requestedAgent;
     }
     // If not valid, assign to manager themselves
