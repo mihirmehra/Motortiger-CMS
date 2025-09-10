@@ -1,12 +1,4 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { toZonedTime } from 'date-fns-tz';
-
-const getFontanaTime = () => {
-  const now = new Date(); // This is the server's time (e.g., UTC)
-  const fontanaTimeZone = 'America/Los_Angeles';
-  // Convert the current time to the specified time zone
-  return toZonedTime(now, fontanaTimeZone);
-};
 
 export interface IUser extends Document {
   _id: string;

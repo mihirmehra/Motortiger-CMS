@@ -1,12 +1,4 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
-import { toZonedTime } from 'date-fns-tz';
-
-const getFontanaTime = () => {
-  const now = new Date(); // This is the server's time (e.g., UTC)
-  const fontanaTimeZone = 'America/Los_Angeles';
-  // Convert the current time to the specified time zone
-  return toZonedTime(now, fontanaTimeZone);
-};
 
 export interface IPaymentRecord extends Document {
   paymentId: string;
@@ -35,57 +27,55 @@ export interface IPaymentRecord extends Document {
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded' | 'disputed';
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-const PaymentRecordSchema = new Schema<IPaymentRecord>({
-  paymentId: { type: String, unique: true, required: true },
-  leadId: { type: Schema.Types.ObjectId, ref: 'Lead' },
-  customerId: { type: Schema.Types.ObjectId, ref: 'User' },
-  customerName: { type: String, required: true },
-  modeOfPayment: { type: String, required: true },
-  paymentPortal: { type: String, enum: ['EasyPayDirect', 'Authorize.net'] },
-  cardNumber: String,
-  expiry: String,
-  paymentDate: { type: Date, required: true },
-  salesPrice: { type: Number, required: true },
-  pendingBalance: Number,
-  costPrice: Number,
-  totalMargin: Number,
-  refunded: Number,
-  disputeCategory: String,
-  disputeReason: String,
-  disputeDate: Date,
-  disputeResult: String,
-  refundDate: Date,
-  refundTAT: String,
-  arn: String,
-  refundCredited: Number,
-  chargebackAmount: Number,
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded', 'disputed'],
-    default: 'pending'
+const PaymentRecordSchema = new Schema<IPaymentRecord>(
+  {
+    paymentId: { type: String, unique: true, required: true },
+    leadId: { type: Schema.Types.ObjectId, ref: 'Lead' },
+    customerId: { type: Schema.Types.ObjectId, ref: 'User' },
+    customerName: { type: String, required: true },
+    modeOfPayment: { type: String, required: true },
+    paymentPortal: { 
+      type: String, 
+      enum: ['EasyPayDirect', 'Authorize.net', ''],
+      default: ''
+    },
+    cardNumber: String,
+    expiry: String,
+    paymentDate: { type: Date, required: true },
+    salesPrice: { type: Number, required: true },
+    pendingBalance: Number,
+    costPrice: Number,
+    totalMargin: Number,
+    refunded: Number,
+    disputeCategory: String,
+    disputeReason: String,
+    disputeDate: Date,
+    disputeResult: String,
+    refundDate: Date,
+    refundTAT: String,
+    arn: String,
+    refundCredited: Number,
+    chargebackAmount: Number,
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'completed', 'failed', 'refunded', 'disputed'],
+      default: 'pending',
+    },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: {
-    type: Date,
-    default: getFontanaTime,
-  },
-  updatedAt: {
-    type: Date,
-    default: getFontanaTime,
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Calculate total margin automatically
-PaymentRecordSchema.pre('save', function(next) {
+PaymentRecordSchema.pre('save', function (next) {
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
   }
-  this.updatedAt = getFontanaTime();
   next();
 });
 
@@ -94,4 +84,5 @@ PaymentRecordSchema.index({ leadId: 1 });
 PaymentRecordSchema.index({ paymentStatus: 1 });
 PaymentRecordSchema.index({ paymentDate: -1 });
 
-export default mongoose.models.PaymentRecord || mongoose.model<IPaymentRecord>('PaymentRecord', PaymentRecordSchema);
+export default mongoose.models.PaymentRecord ||
+  mongoose.model<IPaymentRecord>('PaymentRecord', PaymentRecordSchema);
