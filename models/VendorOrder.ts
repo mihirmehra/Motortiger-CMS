@@ -1,6 +1,14 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
+import { toZonedTime } from 'date-fns-tz';
 
-export type OrderStatus =
+const getFontanaTime = () => {
+  const now = new Date(); // This is the server's time (e.g., UTC)
+  const fontanaTimeZone = 'America/Los_Angeles';
+  // Convert the current time to the specified time zone
+  return toZonedTime(now, fontanaTimeZone);
+};
+
+export type OrderStatus = 
   | 'stage1 (engine pull)'
   | 'stage2 (washing)'
   | 'stage3 (testing)'
@@ -11,8 +19,8 @@ export type OrderStatus =
 export interface IVendorOrder {
   date: Date;
   vendorId: string;
-  shopName: string;
-  vendorAddress: string;
+  vendorName: string;
+  vendorLocation: string;
   orderNo: string;
   customerId?: string;
   customerName?: string;
@@ -23,112 +31,101 @@ export interface IVendorOrder {
   grandTotal?: number;
   courierCompany?: string;
   trackingId?: string;
-  productType?: 'engine' | 'transmission' | 'part';
   productName?: string;
   productAmount?: number;
   shippingAddress?: string;
   quantity?: number;
+  vin?: string;
+  mileageQuote?: string;
   yearOfMfg?: string;
   make?: string;
   model?: string;
-  trim?: string;
-  engineSize?: string;
-  // Part-specific fields
-  partType?: 'used' | 'new';
-  partNumber?: string;
-  vin?: string;
-  // Legacy fields
   specification?: string;
   attention?: string;
   warranty?: string;
   miles?: string;
-  mileageQuote?: string;
-  modeOfPayment?: string;
+  recycler?: string;
+  modeOfPaymentToRecycler?: string;
   dateOfBooking?: Date;
   dateOfDelivery?: Date;
   trackingNumber?: string;
   shippingCompany?: string;
-  proofOfDelivery?: string;
+  modeOfPayment?: string;
+  fedexTracking?: string;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const VendorOrderSchema = new Schema<IVendorOrder>(
-  {
-    date: { type: Date, default: Date.now },
-    vendorId: { type: String, required: true },
-    shopName: { type: String, required: true },
-    vendorAddress: { type: String, required: true },
-    orderNo: { type: String, unique: true, required: true },
-    customerId: { type: Schema.Types.ObjectId, ref: 'User' },
-    customerName: String,
-    orderStatus: {
-      type: String,
-      enum: [
-        'stage1 (engine pull)',
-        'stage2 (washing)',
-        'stage3 (testing)',
-        'stage4 (pack & ready)',
-        'stage5 (shipping)',
-        'stage6 (delivered)',
-      ],
-      default: 'stage1 (engine pull)',
-    },
-    itemSubtotal: Number,
-    shippingHandling: Number,
-    taxCollected: Number,
-    grandTotal: Number,
-    courierCompany: String,
-    trackingId: String,
-    productType: { type: String, enum: ['engine', 'transmission', 'part'] },
-    productName: String,
-    productAmount: Number,
-    shippingAddress: String,
-    quantity: Number,
-    yearOfMfg: String,
-    make: String,
-    model: String,
-    trim: String,
-    engineSize: String,
-    // Part-specific fields
-    partType: { type: String, enum: ['used', 'new'] },
-    partNumber: String,
-    vin: String,
-    // Legacy fields
-    specification: String,
-    attention: String,
-    warranty: String,
-    miles: String,
-    mileageQuote: String,
-    modeOfPayment: String,
-    dateOfBooking: Date,
-    dateOfDelivery: Date,
-    trackingNumber: String,
-    shippingCompany: String,
-    proofOfDelivery: String,
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+const VendorOrderSchema = new Schema<IVendorOrder>({
+  date: { type: Date, default: getFontanaTime },
+  vendorId: { type: String, required: true },
+  vendorName: { type: String, required: true },
+  vendorLocation: { type: String, required: true },
+  orderNo: { type: String, unique: true, required: true },
+  customerId: { type: Schema.Types.ObjectId, ref: 'User' },
+  customerName: String,
+  orderStatus: {
+    type: String,
+    enum: [
+      'stage1 (engine pull)', 'stage2 (washing)', 'stage3 (testing)',
+      'stage4 (pack & ready)', 'stage5 (shipping)', 'stage6 (delivered)'
+    ],
+    default: 'stage1 (engine pull)'
   },
-  {
-    timestamps: true,
-  }
-);
+  itemSubtotal: Number,
+  shippingHandling: Number,
+  taxCollected: Number,
+  grandTotal: Number,
+  courierCompany: String,
+  trackingId: String,
+  productName: String,
+  productAmount: Number,
+  shippingAddress: String,
+  quantity: Number,
+  vin: String,
+  mileageQuote: String,
+  yearOfMfg: String,
+  make: String,
+  model: String,
+  specification: String,
+  attention: String,
+  warranty: String,
+  miles: String,
+  recycler: String,
+  modeOfPaymentToRecycler: String,
+  dateOfBooking: Date,
+  dateOfDelivery: Date,
+  trackingNumber: String,
+  shippingCompany: String,
+  modeOfPayment: String,
+  fedexTracking: String,
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: {
+    type: Date,
+    default: getFontanaTime,
+  },
+  updatedAt: {
+    type: Date,
+    default: getFontanaTime,
+  },
+});
 
 // Calculate grand total automatically
-VendorOrderSchema.pre('save', function (next) {
+VendorOrderSchema.pre('save', function(next) {
   const subtotal = this.itemSubtotal || 0;
   const shipping = this.shippingHandling || 0;
   const tax = this.taxCollected || 0;
   this.grandTotal = subtotal + shipping + tax;
+  this.updatedAt = getFontanaTime();
   next();
 });
 
 VendorOrderSchema.index({ orderNo: 1 });
 VendorOrderSchema.index({ vendorId: 1 });
 VendorOrderSchema.index({ orderStatus: 1 });
-VendorOrderSchema.index({ leadId: 1 });
-VendorOrderSchema.index({ productId: 1 });
 VendorOrderSchema.index({ createdBy: 1 });
 
-export default mongoose.models.VendorOrder ||
-  mongoose.model<IVendorOrder>('VendorOrder', VendorOrderSchema);
+export default mongoose.models.VendorOrder || mongoose.model<IVendorOrder>('VendorOrder', VendorOrderSchema);

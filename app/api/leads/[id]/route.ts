@@ -114,14 +114,6 @@ export async function PUT(
     const body = await request.json();
     const oldValues = lead.toObject();
 
-    // Validate the request body
-    const validation = validateData(leadSchema, body);
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validation.errors },
-        { status: 400 }
-      );
-    }
 
     // Process products data if provided
     if (body.products) {

@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
       .populate('assignedAgent', 'name email')
       .populate('createdBy', 'name')
       .populate('updatedBy', 'name')
-      .populate('notes.createdBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
