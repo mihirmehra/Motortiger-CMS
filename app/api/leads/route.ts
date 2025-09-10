@@ -123,6 +123,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Validate the request body
+    const validation = validateData(leadSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.errors },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     // Process products data
