@@ -115,44 +115,6 @@ export async function PUT(
     const oldValues = lead.toObject();
 
 
-    // Process products data if provided
-    if (body.products) {
-      const processedProducts = body.products.map((product: any) => ({
-        productId: product.productId || generateProductId(),
-        productName: product.productName || '',
-        productAmount: product.productAmount || undefined,
-        quantity: product.quantity || 1,
-        vin: product.vin || undefined,
-        mileageQuote: product.mileageQuote || undefined,
-        yearOfMfg: product.yearOfMfg || undefined,
-        make: product.make || undefined,
-        model: product.model || undefined,
-        specification: product.specification || undefined,
-        attention: product.attention || undefined,
-        warranty: product.warranty || undefined,
-        miles: product.miles || undefined,
-        vendorInfo: product.vendorInfo
-          ? {
-              vendorName: product.vendorInfo.vendorName || undefined,
-              vendorLocation: product.vendorInfo.vendorLocation || undefined,
-              recycler: product.vendorInfo.recycler || undefined,
-              modeOfPaymentToRecycler:
-                product.vendorInfo.modeOfPaymentToRecycler || undefined,
-              dateOfBooking: product.vendorInfo.dateOfBooking
-                ? new Date(product.vendorInfo.dateOfBooking)
-                : undefined,
-              dateOfDelivery: product.vendorInfo.dateOfDelivery
-                ? new Date(product.vendorInfo.dateOfDelivery)
-                : undefined,
-              trackingNumber: product.vendorInfo.trackingNumber || undefined,
-              shippingCompany: product.vendorInfo.shippingCompany || undefined,
-              fedexTracking: product.vendorInfo.fedexTracking || undefined,
-            }
-          : undefined,
-      }));
-      body.products = processedProducts;
-    }
-
     // Handle payment record creation/update if payment information is provided
     if (body.salesPrice && body.salesPrice > 0) {
       const PaymentRecord = (await import('@/models/PaymentRecord')).default;
@@ -315,34 +277,6 @@ export async function PUT(
           }
         }
       }
-    }
-
-    // Handle follow-up status changes
-    const followupStatuses = [
-      'Follow up',
-      'Desision Follow up',
-      'Payment Follow up',
-    ];
-    if (
-      followupStatuses.includes(body.status) &&
-      !followupStatuses.includes(lead.status)
-    ) {
-      // Create follow-up record
-      const followup = new Followup({
-        followupId: generateFollowupId(),
-        leadId: lead._id,
-        leadNumber: lead.leadNumber,
-        customerName: lead.customerName,
-        customerEmail: lead.customerEmail,
-        phoneNumber: lead.phoneNumber,
-        productName: lead.products?.[0]?.productName,
-        salesPrice: lead.salesPrice,
-        status: body.status,
-        assignedAgent: lead.assignedAgent,
-        createdBy: user.id,
-        updatedBy: user.id,
-      });
-      await followup.save();
     }
 
     // Handle status change to "Sale Payment Done"
