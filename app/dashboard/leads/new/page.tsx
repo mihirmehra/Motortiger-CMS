@@ -132,7 +132,7 @@ export default function NewLeadPage() {
   const statusOptions = [
     'New', 'Connected', 'Nurturing', 'Waiting for respond', 'Follow up', 'Desision Follow up', 'Payment Follow up',
     'Customer Waiting for respond', 'Payment Under Process',
-    'Customer making payment', 'Sale Payment Done', 'Sale Closed', 'Incomplete Information'
+    'Customer making payment','Wrong Number', 'Taking Information Only', 'Not Intrested', 'Out Of Scope', 'Trust Issues', 'Voice mail', 'Incomplete Information', 'Sale Payment Done', 'Sale Closed'
   ];
 
   useEffect(() => {

@@ -112,19 +112,25 @@ export default function LeadDetailPage() {
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      New: 'bg-blue-100 text-blue-800',
-      Connected: 'bg-green-100 text-green-800',
-      Nurturing: 'bg-yellow-100 text-yellow-800',
-      'Waiting for respond': 'bg-orange-100 text-orange-800',
-      'Customer Waiting for respond': 'bg-purple-100 text-purple-800',
-      'Follow up': 'bg-blue-100 text-blue-800',
-      'Desision Follow up': 'bg-orange-100 text-orange-800',
-      'Payment Follow up': 'bg-purple-100 text-purple-800',
-      'Payment Under Process': 'bg-indigo-100 text-indigo-800',
-      'Customer making payment': 'bg-pink-100 text-pink-800',
-      'Sale Payment Done': 'bg-emerald-100 text-emerald-800',
-      'Sale Closed': 'bg-gray-100 text-gray-800',
-      'Incomplete Information': 'bg-red-100 text-red-800',
+        New: 'bg-blue-100 text-blue-800',
+        Connected: 'bg-green-100 text-green-800',
+        Nurturing: 'bg-yellow-100 text-yellow-800',
+        'Waiting for respond': 'bg-orange-100 text-orange-800',
+        'Customer Waiting for respond': 'bg-purple-100 text-purple-800',
+        'Follow up': 'bg-cyan-100 text-cyan-800',
+        'Desision Follow up': 'bg-rose-100 text-rose-800',
+        'Payment Follow up': 'bg-fuchsia-100 text-fuchsia-800',
+        'Payment Under Process': 'bg-indigo-100 text-indigo-800',
+        'Customer making payment': 'bg-pink-100 text-pink-800',
+        'Wrong Number': 'bg-red-100 text-red-800',
+        'Taking Information Only': 'bg-lime-100 text-lime-800',
+        'Not Intrested': 'bg-gray-100 text-gray-800',
+        'Out Of Scope': 'bg-slate-100 text-slate-800',
+        'Trust Issues': 'bg-zinc-100 text-zinc-800',
+        'Voice mail': 'bg-violet-100 text-violet-800',
+        'Incomplete Information': 'bg-red-200 text-red-900',
+        'Sale Payment Done': 'bg-emerald-100 text-emerald-800',
+        'Sale Closed': 'bg-neutral-100 text-neutral-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };

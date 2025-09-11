@@ -91,9 +91,15 @@ export default function LeadsPage() {
     'Customer Waiting for respond',
     'Payment Under Process',
     'Customer making payment',
+    'Wrong Number',
+    'Taking Information Only',
+    'Not Intrested',
+    'Out Of Scope',
+    'Trust Issues',
+    'Voice mail',
+    'Incomplete Information',
     'Sale Payment Done',
     'Sale Closed',
-    'Incomplete Information',
   ];
 
   const getStatusColor = (status: string) => {

@@ -11,9 +11,15 @@ export type LeadStatus =
   | 'Payment Follow up'
   | 'Payment Under Process'
   | 'Customer making payment'
+  | 'Wrong Number'
+  | 'Taking Information Only'
+  | 'Not Intrested'
+  | 'Out Of Scope'
+  | 'Trust Issues'
+  | 'Voice mail'
+  | 'Incomplete Information'
   | 'Sale Payment Done'
-  | 'Sale Closed'
-  | 'Incomplete Information';
+  | 'Sale Closed';
 
 export interface IBillingInfo {
   firstName?: string;
@@ -238,9 +244,15 @@ const LeadSchema = new Schema(
         'Payment Follow up',
         'Payment Under Process',
         'Customer making payment',
+        'Wrong Number',
+        'Taking Information Only',
+        'Not Intrested',
+        'Out Of Scope',
+        'Trust Issues',
+        'Voice mail',
+        'Incomplete Information',
         'Sale Payment Done',
         'Sale Closed',
-        'Incomplete Information',
       ],
       default: 'New',
     },
@@ -318,13 +330,6 @@ const LeadSchema = new Schema(
 
 // Calculate total margin and sales price automatically
 LeadSchema.pre('save', function (next) {
-  // Calculate total sales price from all products
-  if (this.products && this.products.length > 0) {
-    this.salesPrice = this.products.reduce((total, product) => {
-      return total + (product.productAmount || 0) * (product.quantity || 1);
-    }, 0);
-  }
-
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
   }
