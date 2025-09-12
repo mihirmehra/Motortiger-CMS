@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/ui/sidebar';
 import { toast } from 'sonner';
 import { useFollowupNotifications } from '@/hooks/use-followup-notifications';
+
 interface User {
   id: string;
   name: string;
@@ -20,6 +21,9 @@ export default function DashboardLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  
+  // Initialize follow-up notifications
+  useFollowupNotifications(user);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -33,7 +37,8 @@ export default function DashboardLayout({
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     router.push('/');
-  }
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -44,6 +49,7 @@ export default function DashboardLayout({
       </div>
     );
   }
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="fixed left-0 top-0 h-full z-50">

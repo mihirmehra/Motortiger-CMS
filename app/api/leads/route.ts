@@ -12,7 +12,9 @@ import {
   generatePaymentId,
   generateOrderNumber,
   generateVendorId,
+  generateFollowupId,
 } from '@/utils/idGenerator';
+import Followup from '@/models/Followup';
 
 function generateProductId(): string {
   const timestamp = Date.now().toString();
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
+    const agent = searchParams.get('agent') || '';
 
     const skip = (page - 1) * limit;
     const filter = permissions.getDataFilter();
@@ -60,9 +63,19 @@ export async function GET(request: NextRequest) {
         {
           $or: [
             { customerName: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
             { customerEmail: { $regex: search, $options: 'i' } },
             { phoneNumber: { $regex: search, $options: 'i' } },
             { leadNumber: { $regex: search, $options: 'i' } },
+            { alternateNumber: { $regex: search, $options: 'i' } },
+            { status: { $regex: search, $options: 'i' } },
+            { 'products.productName': { $regex: search, $options: 'i' } },
+            { 'products.make': { $regex: search, $options: 'i' } },
+            { 'products.model': { $regex: search, $options: 'i' } },
+            { 'products.yearOfMfg': { $regex: search, $options: 'i' } },
+            { modeOfPayment: { $regex: search, $options: 'i' } },
+            { 'billingInfo.state': { $regex: search, $options: 'i' } },
+            { 'shippingInfo.state': { $regex: search, $options: 'i' } }
           ],
         },
       ];
@@ -71,6 +84,11 @@ export async function GET(request: NextRequest) {
     // Add status filter
     if (status) {
       (filter as any).status = status;
+    }
+
+    // Add agent filter
+    if (agent) {
+      (filter as any).assignedAgent = agent;
     }
 
     const leads = await Lead.find(filter)
@@ -274,6 +292,8 @@ export async function POST(request: NextRequest) {
         paymentId: generatePaymentId(),
         leadId: lead._id,
         customerName: lead.customerName,
+        customerPhone: lead.phoneNumber,
+        customerEmail: lead.customerEmail,
         modeOfPayment: body.modeOfPayment || 'Not specified',
         paymentPortal: body.paymentPortal,
         cardNumber: body.cardNumber,
@@ -292,6 +312,12 @@ export async function POST(request: NextRequest) {
         arn: body.arn,
         refundCredited: body.refundCredited,
         chargebackAmount: body.chargebackAmount,
+        // Copy vendor payment info if available
+        vendorPaymentMode: processedProducts[0]?.vendorInfo?.modeOfPayment,
+        vendorPaymentAmount: processedProducts[0]?.vendorInfo?.paymentAmount,
+        vendorPaymentDate: processedProducts[0]?.vendorInfo?.dateOfBooking ? new Date(processedProducts[0].vendorInfo.dateOfBooking) : undefined,
+        vendorName: processedProducts[0]?.vendorInfo?.shopName,
+        vendorAddress: processedProducts[0]?.vendorInfo?.address,
         paymentStatus: 'pending',
         createdBy: user.id,
         updatedBy: user.id,
@@ -314,6 +340,8 @@ export async function POST(request: NextRequest) {
           orderNo: generateOrderNumber(),
           customerId: lead._id,
           customerName: lead.customerName,
+          customerPhone: lead.phoneNumber,
+          customerEmail: lead.customerEmail,
           orderStatus: 'stage1 (engine pull)',
           productType: product.productType,
           productName: product.productName,
@@ -333,6 +361,7 @@ export async function POST(request: NextRequest) {
           trackingNumber: product.vendorInfo.trackingNumber,
           shippingCompany: product.vendorInfo.shippingCompany,
           proofOfDelivery: product.vendorInfo.proofOfDelivery,
+          shippingAddress: leadData.shippingInfo?.fullAddress || leadData.billingInfo?.fullAddress,
           createdBy: user.id,
           updatedBy: user.id,
         };

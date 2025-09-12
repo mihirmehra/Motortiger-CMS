@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { generateProductId } from '@/utils/idGenerator';
 import { US_STATES, COUNTRIES, YEARS, POPULAR_MAKES, PRODUCT_TYPES, PART_TYPES, ADDRESS_TYPES } from '@/utils/constants';
 
@@ -36,72 +36,33 @@ interface Product {
     shopName: string;
     address: string;
     modeOfPayment: string;
+    paymentAmount: string;
     dateOfBooking: string;
     dateOfDelivery: string;
     trackingNumber: string;
     shippingCompany: string;
     proofOfDelivery: string;
+    contactPerson: string;
+    phone: string;
+    email: string;
   };
 }
 
 interface Lead {
   _id: string;
+  leadId: string;
+  leadNumber: string;
   customerName: string;
+  description?: string;
   customerEmail: string;
   phoneNumber: string;
   alternateNumber?: string;
   status: string;
-  assignedAgent: {
-    _id: string;
-    name: string;
-    email: string;
-  };
+  assignedAgent: string;
   sameShippingInfo?: boolean;
-  billingInfo?: {
-    firstName?: string;
-    lastName?: string;
-    fullAddress?: string;
-    addressType?: string;
-    country?: string;
-    state?: string;
-    zipCode?: string;
-    phone?: string;
-  };
-  shippingInfo?: {
-    firstName?: string;
-    lastName?: string;
-    fullAddress?: string;
-    addressType?: string;
-    country?: string;
-    state?: string;
-    zipCode?: string;
-    phone?: string;
-  };
-  products: Array<{
-    productId: string;
-    productType: 'engine' | 'transmission' | 'part';
-    productName: string;
-    productAmount?: number;
-    quantity?: number;
-    yearOfMfg?: string;
-    make?: string;
-    model?: string;
-    trim?: string;
-    engineSize?: string;
-    partType?: 'used' | 'new';
-    partNumber?: string;
-    vin?: string;
-    vendorInfo?: {
-      shopName?: string;
-      address?: string;
-      modeOfPayment?: string;
-      dateOfBooking?: string;
-      dateOfDelivery?: string;
-      trackingNumber?: string;
-      shippingCompany?: string;
-      proofOfDelivery?: string;
-    };
-  }>;
+  billingInfo?: any;
+  shippingInfo?: any;
+  products: Product[];
   // Payment fields
   modeOfPayment?: string;
   paymentPortal?: string;
@@ -131,12 +92,17 @@ export default function EditLeadPage() {
   const [originalLead, setOriginalLead] = useState<Lead | null>(null);
   const [formData, setFormData] = useState({
     customerName: '',
+    description: '',
     customerEmail: '',
     phoneNumber: '',
     alternateNumber: '',
     assignedAgent: '',
     status: 'New',
     sameShippingInfo: false,
+  });
+  const [followupDateTime, setFollowupDateTime] = useState({
+    date: '',
+    time: ''
   });
 
   const [billingInfo, setBillingInfo] = useState({
@@ -193,6 +159,9 @@ export default function EditLeadPage() {
     'Customer making payment','Wrong Number', 'Taking Information Only', 'Not Intrested', 'Out Of Scope', 'Trust Issues', 'Voice mail', 'Incomplete Information', 'Sale Payment Done', 'Sale Closed'
   ];
 
+  const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
+  const isFollowupStatus = followupStatuses.includes(formData.status);
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -200,13 +169,152 @@ export default function EditLeadPage() {
       setCurrentUser(user);
       loadAvailableUsers(user);
     }
-  }, []);
-
-  useEffect(() => {
+    
     if (params.id) {
       loadLead();
     }
   }, [params.id]);
+
+  const loadLead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/leads/${params.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const lead = data.lead;
+        setOriginalLead(lead);
+        
+        // Populate form data
+        setFormData({
+          customerName: lead.customerName || '',
+          description: lead.description || '',
+          customerEmail: lead.customerEmail || '',
+          phoneNumber: lead.phoneNumber || '',
+          alternateNumber: lead.alternateNumber || '',
+          assignedAgent: lead.assignedAgent?._id || '',
+          status: lead.status || 'New',
+          sameShippingInfo: lead.sameShippingInfo || false,
+        });
+
+        setBillingInfo(lead.billingInfo || {
+          firstName: '',
+          lastName: '',
+          fullAddress: '',
+          addressType: 'residential',
+          country: 'US',
+          state: '',
+          zipCode: '',
+          phone: '',
+        });
+
+        setShippingInfo(lead.shippingInfo || {
+          firstName: '',
+          lastName: '',
+          fullAddress: '',
+          addressType: 'residential',
+          country: 'US',
+          state: '',
+          zipCode: '',
+          phone: '',
+        });
+
+        setPaymentData({
+          modeOfPayment: lead.modeOfPayment || '',
+          paymentPortal: lead.paymentPortal || '',
+          cardNumber: lead.cardNumber || '',
+          expiry: lead.expiry || '',
+          paymentDate: lead.paymentDate ? new Date(lead.paymentDate).toISOString().split('T')[0] : '',
+          salesPrice: lead.salesPrice?.toString() || '',
+          pendingBalance: lead.pendingBalance?.toString() || '',
+          costPrice: lead.costPrice?.toString() || '',
+          refunded: lead.refunded?.toString() || '',
+          disputeCategory: lead.disputeCategory || '',
+          disputeReason: lead.disputeReason || '',
+          disputeDate: lead.disputeDate ? new Date(lead.disputeDate).toISOString().split('T')[0] : '',
+          disputeResult: lead.disputeResult || '',
+          refundDate: lead.refundDate ? new Date(lead.refundDate).toISOString().split('T')[0] : '',
+          refundTAT: lead.refundTAT || '',
+          arn: lead.arn || '',
+          refundCredited: lead.refundCredited?.toString() || '',
+          chargebackAmount: lead.chargebackAmount?.toString() || ''
+        });
+
+        // Convert products to editable format
+        const editableProducts = lead.products?.map((product: any) => ({
+          productId: product.productId || generateProductId(),
+          productType: product.productType || 'engine',
+          productName: product.productName || '',
+          productAmount: product.productAmount?.toString() || '',
+          quantity: product.quantity?.toString() || '1',
+          yearOfMfg: product.yearOfMfg || '',
+          make: product.make || '',
+          model: product.model || '',
+          trim: product.trim || '',
+          engineSize: product.engineSize || '',
+          partType: product.partType || '',
+          partNumber: product.partNumber || '',
+          vin: product.vin || '',
+          vendorInfo: {
+            shopName: product.vendorInfo?.shopName || '',
+            address: product.vendorInfo?.address || '',
+            modeOfPayment: product.vendorInfo?.modeOfPayment || '',
+            paymentAmount: product.vendorInfo?.paymentAmount?.toString() || '',
+            dateOfBooking: product.vendorInfo?.dateOfBooking ? new Date(product.vendorInfo.dateOfBooking).toISOString().split('T')[0] : '',
+            dateOfDelivery: product.vendorInfo?.dateOfDelivery ? new Date(product.vendorInfo.dateOfDelivery).toISOString().split('T')[0] : '',
+            trackingNumber: product.vendorInfo?.trackingNumber || '',
+            shippingCompany: product.vendorInfo?.shippingCompany || '',
+            proofOfDelivery: product.vendorInfo?.proofOfDelivery || '',
+            contactPerson: product.vendorInfo?.contactPerson || '',
+            phone: product.vendorInfo?.phone || '',
+            email: product.vendorInfo?.email || '',
+          }
+        })) || [{
+          productId: generateProductId(),
+          productType: 'engine',
+          productName: '',
+          productAmount: '',
+          quantity: '1',
+          yearOfMfg: '',
+          make: '',
+          model: '',
+          trim: '',
+          engineSize: '',
+          partType: '',
+          partNumber: '',
+          vin: '',
+          vendorInfo: {
+            shopName: '',
+            address: '',
+            modeOfPayment: '',
+            paymentAmount: '',
+            dateOfBooking: '',
+            dateOfDelivery: '',
+            trackingNumber: '',
+            shippingCompany: '',
+            proofOfDelivery: '',
+            contactPerson: '',
+            phone: '',
+            email: '',
+          }
+        }];
+
+        setProducts(editableProducts);
+      } else {
+        console.error('Failed to load lead');
+        router.push('/dashboard/leads');
+      }
+    } catch (error) {
+      console.error('Error loading lead:', error);
+      router.push('/dashboard/leads');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const loadAvailableUsers = async (user: User) => {
     try {
@@ -234,144 +342,6 @@ export default function EditLeadPage() {
     }
   };
 
-  const loadLead = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/leads/${params.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const lead = data.lead;
-        setOriginalLead(lead);
-
-        // Set form data
-        setFormData({
-          customerName: lead.customerName || '',
-          customerEmail: lead.customerEmail || '',
-          phoneNumber: lead.phoneNumber || '',
-          alternateNumber: lead.alternateNumber || '',
-          assignedAgent: lead.assignedAgent?._id || '',
-          status: lead.status || 'New',
-          sameShippingInfo: lead.sameShippingInfo || false,
-        });
-
-        // Set billing info
-        setBillingInfo({
-          firstName: lead.billingInfo?.firstName || '',
-          lastName: lead.billingInfo?.lastName || '',
-          fullAddress: lead.billingInfo?.fullAddress || '',
-          addressType: lead.billingInfo?.addressType || 'residential',
-          country: lead.billingInfo?.country || 'US',
-          state: lead.billingInfo?.state || '',
-          zipCode: lead.billingInfo?.zipCode || '',
-          phone: lead.billingInfo?.phone || '',
-        });
-
-        // Set shipping info
-        setShippingInfo({
-          firstName: lead.shippingInfo?.firstName || '',
-          lastName: lead.shippingInfo?.lastName || '',
-          fullAddress: lead.shippingInfo?.fullAddress || '',
-          addressType: lead.shippingInfo?.addressType || 'residential',
-          country: lead.shippingInfo?.country || 'US',
-          state: lead.shippingInfo?.state || '',
-          zipCode: lead.shippingInfo?.zipCode || '',
-          phone: lead.shippingInfo?.phone || '',
-        });
-
-        // Set payment data
-        setPaymentData({
-          modeOfPayment: lead.modeOfPayment || '',
-          paymentPortal: lead.paymentPortal || '',
-          cardNumber: lead.cardNumber || '',
-          expiry: lead.expiry || '',
-          paymentDate: lead.paymentDate ? new Date(lead.paymentDate).toISOString().split('T')[0] : '',
-          salesPrice: lead.salesPrice?.toString() || '',
-          pendingBalance: lead.pendingBalance?.toString() || '',
-          costPrice: lead.costPrice?.toString() || '',
-          refunded: lead.refunded?.toString() || '',
-          disputeCategory: lead.disputeCategory || '',
-          disputeReason: lead.disputeReason || '',
-          disputeDate: lead.disputeDate ? new Date(lead.disputeDate).toISOString().split('T')[0] : '',
-          disputeResult: lead.disputeResult || '',
-          refundDate: lead.refundDate ? new Date(lead.refundDate).toISOString().split('T')[0] : '',
-          refundTAT: lead.refundTAT || '',
-          arn: lead.arn || '',
-          refundCredited: lead.refundCredited?.toString() || '',
-          chargebackAmount: lead.chargebackAmount?.toString() || ''
-        });
-
-        // Set products
-        if (lead.products && lead.products.length > 0) {
-          const formattedProducts = lead.products.map((product: any) => ({
-            productId: product.productId || generateProductId(),
-            productType: product.productType || 'engine',
-            productName: product.productName || '',
-            productAmount: product.productAmount?.toString() || '',
-            quantity: product.quantity?.toString() || '1',
-            yearOfMfg: product.yearOfMfg || '',
-            make: product.make || '',
-            model: product.model || '',
-            trim: product.trim || '',
-            engineSize: product.engineSize || '',
-            partType: product.partType || '',
-            partNumber: product.partNumber || '',
-            vin: product.vin || '',
-            vendorInfo: {
-              shopName: product.vendorInfo?.shopName || '',
-              address: product.vendorInfo?.address || '',
-              modeOfPayment: product.vendorInfo?.modeOfPayment || '',
-              dateOfBooking: product.vendorInfo?.dateOfBooking ? new Date(product.vendorInfo.dateOfBooking).toISOString().split('T')[0] : '',
-              dateOfDelivery: product.vendorInfo?.dateOfDelivery ? new Date(product.vendorInfo.dateOfDelivery).toISOString().split('T')[0] : '',
-              trackingNumber: product.vendorInfo?.trackingNumber || '',
-              shippingCompany: product.vendorInfo?.shippingCompany || '',
-              proofOfDelivery: product.vendorInfo?.proofOfDelivery || '',
-            }
-          }));
-          setProducts(formattedProducts);
-        } else {
-          setProducts([{
-            productId: generateProductId(),
-            productType: 'engine',
-            productName: '',
-            productAmount: '',
-            quantity: '1',
-            yearOfMfg: '',
-            make: '',
-            model: '',
-            trim: '',
-            engineSize: '',
-            partType: '',
-            partNumber: '',
-            vin: '',
-            vendorInfo: {
-              shopName: '',
-              address: '',
-              modeOfPayment: '',
-              dateOfBooking: '',
-              dateOfDelivery: '',
-              trackingNumber: '',
-              shippingCompany: '',
-              proofOfDelivery: '',
-            }
-          }]);
-        }
-      } else {
-        console.error('Failed to load lead');
-        router.push('/dashboard/leads');
-      }
-    } catch (error) {
-      console.error('Error loading lead:', error);
-      router.push('/dashboard/leads');
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
   const addProduct = () => {
     setProducts([...products, {
       productId: generateProductId(),
@@ -391,11 +361,15 @@ export default function EditLeadPage() {
         shopName: '',
         address: '',
         modeOfPayment: '',
+        paymentAmount: '',
         dateOfBooking: '',
         dateOfDelivery: '',
         trackingNumber: '',
         shippingCompany: '',
         proofOfDelivery: '',
+        contactPerson: '',
+        phone: '',
+        email: '',
       }
     }]);
   };
@@ -425,6 +399,13 @@ export default function EditLeadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate follow-up date and time if status is follow-up
+    if (isFollowupStatus && (!followupDateTime.date || !followupDateTime.time)) {
+      alert('Please select follow-up date and time for follow-up status');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -449,11 +430,15 @@ export default function EditLeadPage() {
           shopName: product.vendorInfo.shopName || undefined,
           address: product.vendorInfo.address || undefined,
           modeOfPayment: product.vendorInfo.modeOfPayment || undefined,
+          paymentAmount: product.vendorInfo.paymentAmount ? parseFloat(product.vendorInfo.paymentAmount) : undefined,
           dateOfBooking: product.vendorInfo.dateOfBooking || undefined,
           dateOfDelivery: product.vendorInfo.dateOfDelivery || undefined,
           trackingNumber: product.vendorInfo.trackingNumber || undefined,
           shippingCompany: product.vendorInfo.shippingCompany || undefined,
           proofOfDelivery: product.vendorInfo.proofOfDelivery || undefined,
+          contactPerson: product.vendorInfo.contactPerson || undefined,
+          phone: product.vendorInfo.phone || undefined,
+          email: product.vendorInfo.email || undefined,
         }
       }));
       
@@ -472,7 +457,12 @@ export default function EditLeadPage() {
         disputeDate: paymentData.disputeDate ? new Date(paymentData.disputeDate) : undefined,
         refundDate: paymentData.refundDate ? new Date(paymentData.refundDate) : undefined,
         products: productsData,
-        assignedAgent: formData.assignedAgent || undefined
+        assignedAgent: formData.assignedAgent || undefined,
+        // Include follow-up date and time if it's a follow-up status
+        ...(isFollowupStatus && {
+          followupDate: followupDateTime.date,
+          followupTime: followupDateTime.time
+        })
       };
       
       const response = await fetch(`/api/leads/${params.id}`, {
@@ -499,7 +489,7 @@ export default function EditLeadPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -560,12 +550,12 @@ export default function EditLeadPage() {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Lead Details
+              Back to Lead
             </Button>
           </div>
           
           <h1 className="text-3xl font-bold text-gray-900">Edit Lead</h1>
-          <p className="text-gray-600">Update lead information and products</p>
+          <p className="text-gray-600">Update lead information and details</p>
         </div>
 
         {/* Form */}
@@ -586,6 +576,19 @@ export default function EditLeadPage() {
                     onChange={handleChange}
                     required
                     className="mt-1"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="description">Description</Label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Enter customer description or additional notes..."
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
 
@@ -639,6 +642,36 @@ export default function EditLeadPage() {
                   </select>
                 </div>
 
+                {/* Follow-up Date & Time Fields */}
+                {isFollowupStatus && (
+                  <>
+                    <div>
+                      <Label htmlFor="followupDate">Follow-up Date *</Label>
+                      <Input
+                        id="followupDate"
+                        type="date"
+                        value={followupDateTime.date}
+                        onChange={(e) => setFollowupDateTime(prev => ({ ...prev, date: e.target.value }))}
+                        required={isFollowupStatus}
+                        className="mt-1"
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="followupTime">Follow-up Time *</Label>
+                      <Input
+                        id="followupTime"
+                        type="time"
+                        value={followupDateTime.time}
+                        onChange={(e) => setFollowupDateTime(prev => ({ ...prev, time: e.target.value }))}
+                        required={isFollowupStatus}
+                        className="mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div>
                   <Label htmlFor="assignedAgent">Assigned Agent</Label>
                   <select
@@ -648,7 +681,7 @@ export default function EditLeadPage() {
                     onChange={handleChange}
                     className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Keep current assignment</option>
+                    <option value="">Assign to me</option>
                     {availableUsers.map(user => (
                       <option key={user._id} value={user._id}>
                         {user.name} ({user.email}) - {user.role}
@@ -1098,10 +1131,49 @@ export default function EditLeadPage() {
                         </div>
 
                         <div>
+                          <Label>Contact Person</Label>
+                          <Input
+                            value={product.vendorInfo.contactPerson}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.contactPerson', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Vendor Phone</Label>
+                          <Input
+                            value={product.vendorInfo.phone}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.phone', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Vendor Email</Label>
+                          <Input
+                            type="email"
+                            value={product.vendorInfo.email}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.email', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
                           <Label>Mode of Payment</Label>
                           <Input
                             value={product.vendorInfo.modeOfPayment}
                             onChange={(e) => updateProduct(index, 'vendorInfo.modeOfPayment', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Payment Amount</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={product.vendorInfo.paymentAmount}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.paymentAmount', e.target.value)}
                             className="mt-1"
                           />
                         </div>
@@ -1146,22 +1218,17 @@ export default function EditLeadPage() {
 
                         <div>
                           <Label>Proof of Delivery</Label>
-                          <div className="mt-1 flex items-center gap-2">
-                            <Input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  updateProduct(index, 'vendorInfo.proofOfDelivery', file.name);
-                                }
-                              }}
-                              className="flex-1"
-                            />
-                            <Button type="button" variant="outline" size="sm">
-                              <Upload className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                updateProduct(index, 'vendorInfo.proofOfDelivery', file.name);
+                              }
+                            }}
+                            className="mt-1"
+                          />
                         </div>
                       </div>
                     </div>

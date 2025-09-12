@@ -25,15 +25,18 @@ import {
   Trash2,
   Save,
   X,
+  MessageSquare,
 } from 'lucide-react';
 import ImportModal from '@/components/ui/import-modal';
 import FollowupModal, { FollowupData } from '@/components/ui/followup-modal';
+import EnhancedNotesModal from '@/components/ui/enhanced-notes-modal';
 
 interface Lead {
   _id: string;
   leadId: string;
   leadNumber: string;
   customerName: string;
+  description?: string;
   customerEmail: string;
   phoneNumber: string;
   status: string;
@@ -48,6 +51,15 @@ interface Lead {
     quantity?: number;
   }>;
   salesPrice?: number;
+  notes?: Array<{
+    _id: string;
+    content: string;
+    createdAt: string;
+    createdBy: {
+      name: string;
+      email: string;
+    };
+  }>;
   createdAt: string;
 }
 
@@ -64,7 +76,9 @@ export default function LeadsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [agentFilter, setAgentFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [editingStatus, setEditingStatus] = useState<{ [key: string]: string }>(
     {}
@@ -78,6 +92,8 @@ export default function LeadsPage() {
   const [selectedLeadForFollowup, setSelectedLeadForFollowup] =
     useState<Lead | null>(null);
   const [selectedFollowupType, setSelectedFollowupType] = useState<string>('');
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [selectedLeadForNotes, setSelectedLeadForNotes] = useState<Lead | null>(null);
   const router = useRouter();
 
   const statusOptions = [
@@ -128,7 +144,7 @@ export default function LeadsPage() {
       loadAvailableUsers(user);
     }
     loadLeads();
-  }, [currentPage, search, statusFilter]);
+  }, [currentPage, itemsPerPage, search, statusFilter, agentFilter]);
 
   const loadAvailableUsers = async (user: User) => {
     try {
@@ -166,9 +182,10 @@ export default function LeadsPage() {
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '10',
+        limit: itemsPerPage.toString(),
         ...(search && { search }),
         ...(statusFilter && { status: statusFilter }),
+        ...(agentFilter && { agent: agentFilter }),
       });
 
       const response = await fetch(`/api/leads?${params}`, {
@@ -434,12 +451,12 @@ export default function LeadsPage() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="p-6">
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search leads..."
+                  placeholder="Search by name, email, phone, lead number, product, make, model, year, payment mode, state..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
@@ -458,6 +475,34 @@ export default function LeadsPage() {
                   {status}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={agentFilter}
+              onChange={(e) => setAgentFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Agents</option>
+              {availableUsers.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(parseInt(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={5}>5 per page</option>
+              <option value={10}>10 per page</option>
+              <option value={25}>25 per page</option>
+              <option value={50}>50 per page</option>
+              <option value={100}>100 per page</option>
             </select>
           </div>
         </CardContent>
@@ -481,6 +526,7 @@ export default function LeadsPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Assigned Agent</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Notes</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -666,6 +712,21 @@ export default function LeadsPage() {
                       {new Date(lead.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedLeadForNotes(lead);
+                          setShowNotesModal(true);
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        Notes ({lead.notes?.length || 0})
+                      </Button>
+                    </TableCell>
+                    <TableCell>
                       {/* Actions moved to Lead Number column */}
                     </TableCell>
                   </TableRow>
@@ -723,6 +784,17 @@ export default function LeadsPage() {
           leadNumber: selectedLeadForFollowup?.leadNumber || '',
         }}
         followupType={selectedFollowupType}
+      />
+
+      {/* Notes Modal */}
+      <EnhancedNotesModal
+        isOpen={showNotesModal}
+        onClose={() => {
+          setShowNotesModal(false);
+          setSelectedLeadForNotes(null);
+        }}
+        lead={selectedLeadForNotes}
+        onUpdate={loadLeads}
       />
     </div>
   );

@@ -16,6 +16,8 @@ export interface IVendorOrder {
   orderNo: string;
   customerId?: string;
   customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   orderStatus: OrderStatus;
   itemSubtotal?: number;
   shippingHandling?: number;
@@ -37,18 +39,25 @@ export interface IVendorOrder {
   partType?: 'used' | 'new';
   partNumber?: string;
   vin?: string;
-  // Legacy fields
-  specification?: string;
-  attention?: string;
-  warranty?: string;
-  miles?: string;
-  mileageQuote?: string;
+  // Vendor payment fields
+  vendorPaymentMode?: string;
+  vendorPaymentAmount?: number;
+  vendorPaymentDate?: Date;
+  vendorPaymentStatus?: 'pending' | 'completed' | 'failed';
+  // Shipping and delivery
   modeOfPayment?: string;
   dateOfBooking?: Date;
   dateOfDelivery?: Date;
   trackingNumber?: string;
   shippingCompany?: string;
   proofOfDelivery?: string;
+  // Additional vendor details
+  vendorContactPerson?: string;
+  vendorPhone?: string;
+  vendorEmail?: string;
+  estimatedDeliveryDate?: Date;
+  actualDeliveryDate?: Date;
+  orderNotes?: string;
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
 }
@@ -62,6 +71,8 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     orderNo: { type: String, unique: true, required: true },
     customerId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerName: String,
+    customerPhone: String,
+    customerEmail: String,
     orderStatus: {
       type: String,
       enum: [
@@ -94,18 +105,29 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     partType: { type: String, enum: ['used', 'new'] },
     partNumber: String,
     vin: String,
-    // Legacy fields
-    specification: String,
-    attention: String,
-    warranty: String,
-    miles: String,
-    mileageQuote: String,
+    // Vendor payment fields
+    vendorPaymentMode: String,
+    vendorPaymentAmount: Number,
+    vendorPaymentDate: Date,
+    vendorPaymentStatus: { 
+      type: String, 
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending'
+    },
+    // Shipping and delivery
     modeOfPayment: String,
     dateOfBooking: Date,
     dateOfDelivery: Date,
     trackingNumber: String,
     shippingCompany: String,
     proofOfDelivery: String,
+    // Additional vendor details
+    vendorContactPerson: String,
+    vendorPhone: String,
+    vendorEmail: String,
+    estimatedDeliveryDate: Date,
+    actualDeliveryDate: Date,
+    orderNotes: String,
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

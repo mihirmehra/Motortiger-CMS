@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -16,7 +17,8 @@ import {
   LogOut,
   Menu,
   X,
-  Car
+  Car,
+  BarChart3
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,8 +28,36 @@ interface SidebarProps {
 
 export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [followupCount, setFollowupCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (user) {
+      loadFollowupCount();
+      // Set up interval to check for follow-ups every minute
+      const interval = setInterval(loadFollowupCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const loadFollowupCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/followups/pending-count', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFollowupCount(data.count);
+      }
+    } catch (error) {
+      console.error('Failed to load followup count:', error);
+    }
+  };
 
   const menuItems = [
     { 
@@ -52,7 +82,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       icon: Clock, 
       label: 'Follow-ups', 
       href: '/dashboard/followups',
-      roles: ['admin', 'manager', 'agent']
+      roles: ['admin', 'manager', 'agent'],
+      badge: followupCount > 0 ? followupCount : undefined
     },
     { 
       icon: TrendingUp, 
@@ -83,6 +114,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       label: 'Activity History', 
       href: '/dashboard/activity',
       roles: ['admin']
+    },
+    { 
+      icon: BarChart3, 
+      label: 'Analytics', 
+      href: '/dashboard/analytics',
+      roles: ['admin', 'manager']
     }
   ];
 

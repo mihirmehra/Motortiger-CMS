@@ -20,6 +20,7 @@ interface Lead {
   leadId: string;
   leadNumber: string;
   customerName: string;
+  description?: string;
   customerEmail: string;
   phoneNumber: string;
   alternateNumber?: string;
@@ -249,6 +250,16 @@ export default function LeadDetailPage() {
                     </label>
                     <p className="text-lg font-semibold">{lead.customerName}</p>
                   </div>
+                  {lead.description && (
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-medium text-gray-500">
+                        Description
+                      </label>
+                      <div className="mt-1 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{lead.description}</p>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium text-gray-500">
                       Email
@@ -288,6 +299,14 @@ export default function LeadDetailPage() {
                       {lead.assignedAgent?.email}
                     </p>
                   </div>
+                  {lead.alternateNumber && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">
+                        Alternate Number
+                      </label>
+                      <p className="text-lg">{lead.alternateNumber}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Billing Information */}
@@ -400,6 +419,15 @@ export default function LeadDetailPage() {
                           <p className="text-sm">{lead.shippingInfo.phone}</p>
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+                {lead.sameShippingInfo && (
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        <strong>Note:</strong> Shipping information is same as billing information
+                      </p>
                     </div>
                   </div>
                 )}
@@ -690,6 +718,42 @@ export default function LeadDetailPage() {
                         </p>
                       </div>
                     )}
+                    {lead.refundCredited && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Refund Credited
+                        </label>
+                        <p className="text-sm text-blue-600">
+                          ${lead.refundCredited.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {lead.chargebackAmount && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Chargeback Amount
+                        </label>
+                        <p className="text-sm text-red-600">
+                          ${lead.chargebackAmount.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {lead.cardNumber && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Card Number
+                        </label>
+                        <p className="text-sm font-mono">****-****-****-{lead.cardNumber.slice(-4)}</p>
+                      </div>
+                    )}
+                    {lead.expiry && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Card Expiry
+                        </label>
+                        <p className="text-sm">{lead.expiry}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Dispute Information */}
@@ -731,6 +795,32 @@ export default function LeadDetailPage() {
                               Dispute Result
                             </label>
                             <p className="text-sm">{lead.disputeResult}</p>
+                          </div>
+                        )}
+                        {lead.refundDate && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">
+                              Refund Date
+                            </label>
+                            <p className="text-sm">
+                              {new Date(lead.refundDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                        {lead.refundTAT && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">
+                              Refund TAT
+                            </label>
+                            <p className="text-sm">{lead.refundTAT}</p>
+                          </div>
+                        )}
+                        {lead.arn && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">
+                              ARN
+                            </label>
+                            <p className="text-sm font-mono">{lead.arn}</p>
                           </div>
                         )}
                       </div>

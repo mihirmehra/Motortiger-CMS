@@ -66,6 +66,7 @@ export const productSchema = z.object({
 
 export const leadSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required'),
+  description: z.string().optional(),
   phoneNumber: z.string().min(1, 'Phone number is required'),
   customerEmail: z
     .string()

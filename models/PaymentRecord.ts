@@ -5,6 +5,8 @@ export interface IPaymentRecord extends Document {
   leadId?: Types.ObjectId;
   customerId?: Types.ObjectId;
   customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
   modeOfPayment: string;
   paymentPortal?: 'EasyPayDirect' | 'Authorize.net';
   cardNumber?: string;
@@ -15,6 +17,7 @@ export interface IPaymentRecord extends Document {
   costPrice?: number;
   totalMargin?: number;
   refunded?: number;
+  // Enhanced dispute fields
   disputeCategory?: string;
   disputeReason?: string;
   disputeDate?: Date;
@@ -24,6 +27,17 @@ export interface IPaymentRecord extends Document {
   arn?: string;
   refundCredited?: number;
   chargebackAmount?: number;
+  // Vendor payment information
+  vendorPaymentMode?: string;
+  vendorPaymentAmount?: number;
+  vendorPaymentDate?: Date;
+  vendorPaymentStatus?: 'pending' | 'completed' | 'failed';
+  vendorName?: string;
+  vendorAddress?: string;
+  // Additional payment details
+  transactionId?: string;
+  paymentNotes?: string;
+  processingFee?: number;
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded' | 'disputed';
   createdBy: Types.ObjectId;
   updatedBy: Types.ObjectId;
@@ -35,6 +49,8 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     leadId: { type: Schema.Types.ObjectId, ref: 'Lead' },
     customerId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerName: { type: String, required: true },
+    customerPhone: String,
+    customerEmail: String,
     modeOfPayment: { type: String, required: true },
     paymentPortal: { 
       type: String, 
@@ -49,6 +65,7 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     costPrice: Number,
     totalMargin: Number,
     refunded: Number,
+    // Enhanced dispute fields
     disputeCategory: String,
     disputeReason: String,
     disputeDate: Date,
@@ -58,6 +75,21 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     arn: String,
     refundCredited: Number,
     chargebackAmount: Number,
+    // Vendor payment information
+    vendorPaymentMode: String,
+    vendorPaymentAmount: Number,
+    vendorPaymentDate: Date,
+    vendorPaymentStatus: { 
+      type: String, 
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending'
+    },
+    vendorName: String,
+    vendorAddress: String,
+    // Additional payment details
+    transactionId: String,
+    paymentNotes: String,
+    processingFee: Number,
     paymentStatus: {
       type: String,
       enum: ['pending', 'completed', 'failed', 'refunded', 'disputed'],

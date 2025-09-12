@@ -114,6 +114,43 @@ export async function PUT(
     const body = await request.json();
     const oldValues = lead.toObject();
 
+    // Handle follow-up scheduling if status changed to follow-up and date/time provided
+    const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
+    const isChangingToFollowup = followupStatuses.includes(body.status) && body.status !== oldValues.status;
+    
+    if (isChangingToFollowup && body.followupDate && body.followupTime) {
+      const followupData = {
+        followupId: generateFollowupId(),
+        leadId: lead._id,
+        leadNumber: lead.leadNumber,
+        customerName: lead.customerName,
+        customerEmail: lead.customerEmail,
+        phoneNumber: lead.phoneNumber,
+        productName: lead.products?.[0]?.productName,
+        salesPrice: lead.salesPrice,
+        status: body.status,
+        assignedAgent: lead.assignedAgent,
+        scheduledDate: new Date(`${body.followupDate}T${body.followupTime}`),
+        scheduledTime: body.followupTime,
+        notes: [`Follow-up scheduled for ${new Date(`${body.followupDate}T${body.followupTime}`).toLocaleString()}`],
+        createdBy: user.id,
+        updatedBy: user.id
+      };
+
+      const followup = new Followup(followupData);
+      await followup.save();
+
+      // Add to lead's scheduled followups
+      lead.scheduledFollowups.push({
+        followupType: body.status,
+        scheduledDate: new Date(`${body.followupDate}T${body.followupTime}`),
+        scheduledTime: body.followupTime,
+        notes: `Follow-up scheduled during lead update`,
+        isCompleted: false,
+        createdBy: user.id,
+        createdAt: new Date()
+      });
+    }
 
     // Handle payment record creation/update if payment information is provided
     if (body.salesPrice && body.salesPrice > 0) {
@@ -125,6 +162,8 @@ export async function PUT(
       if (existingPayment) {
         // Update existing payment record
         Object.assign(existingPayment, {
+          customerPhone: lead.phoneNumber,
+          customerEmail: lead.customerEmail,
           modeOfPayment: body.modeOfPayment || existingPayment.modeOfPayment,
           paymentPortal: body.paymentPortal,
           cardNumber: body.cardNumber,
@@ -149,6 +188,12 @@ export async function PUT(
           arn: body.arn,
           refundCredited: body.refundCredited,
           chargebackAmount: body.chargebackAmount,
+          // Copy vendor payment info if available
+          vendorPaymentMode: body.products?.[0]?.vendorInfo?.modeOfPayment,
+          vendorPaymentAmount: body.products?.[0]?.vendorInfo?.paymentAmount,
+          vendorPaymentDate: body.products?.[0]?.vendorInfo?.dateOfBooking ? new Date(body.products[0].vendorInfo.dateOfBooking) : undefined,
+          vendorName: body.products?.[0]?.vendorInfo?.shopName,
+          vendorAddress: body.products?.[0]?.vendorInfo?.address,
           updatedBy: user.id,
         });
         await existingPayment.save();
@@ -159,6 +204,8 @@ export async function PUT(
           paymentId: generatePaymentId(),
           leadId: lead._id,
           customerName: lead.customerName,
+          customerPhone: lead.phoneNumber,
+          customerEmail: lead.customerEmail,
           modeOfPayment: body.modeOfPayment || 'Not specified',
           paymentPortal: body.paymentPortal,
           cardNumber: body.cardNumber,
@@ -181,6 +228,12 @@ export async function PUT(
           arn: body.arn,
           refundCredited: body.refundCredited,
           chargebackAmount: body.chargebackAmount,
+          // Copy vendor payment info if available
+          vendorPaymentMode: body.products?.[0]?.vendorInfo?.modeOfPayment,
+          vendorPaymentAmount: body.products?.[0]?.vendorInfo?.paymentAmount,
+          vendorPaymentDate: body.products?.[0]?.vendorInfo?.dateOfBooking ? new Date(body.products[0].vendorInfo.dateOfBooking) : undefined,
+          vendorName: body.products?.[0]?.vendorInfo?.shopName,
+          vendorAddress: body.products?.[0]?.vendorInfo?.address,
           paymentStatus: 'pending',
           createdBy: user.id,
           updatedBy: user.id,
@@ -209,28 +262,32 @@ export async function PUT(
           if (existingOrder) {
             // Update existing vendor order
             Object.assign(existingOrder, {
-              vendorName:
-                product.vendorInfo.vendorName || existingOrder.vendorName,
-              vendorLocation:
-                product.vendorInfo.vendorLocation ||
-                existingOrder.vendorLocation,
+              shopName: product.vendorInfo.shopName || existingOrder.shopName,
+              vendorAddress: product.vendorInfo.address || existingOrder.vendorAddress,
+              customerPhone: lead.phoneNumber,
+              customerEmail: lead.customerEmail,
               productName: product.productName,
               productAmount: product.productAmount,
               quantity: product.quantity,
-              vin: product.vin,
-              mileageQuote: product.mileageQuote,
               yearOfMfg: product.yearOfMfg,
               make: product.make,
               model: product.model,
-              specification: product.specification,
-              recycler: product.vendorInfo.recycler,
-              modeOfPaymentToRecycler:
-                product.vendorInfo.modeOfPaymentToRecycler,
+              trim: product.trim,
+              engineSize: product.engineSize,
+              partType: product.partType,
+              partNumber: product.partNumber,
+              vin: product.vin,
+              modeOfPayment: product.vendorInfo.modeOfPayment,
+              vendorPaymentMode: product.vendorInfo.modeOfPayment,
+              vendorPaymentAmount: product.vendorInfo.paymentAmount,
+              vendorContactPerson: product.vendorInfo.contactPerson,
+              vendorPhone: product.vendorInfo.phone,
+              vendorEmail: product.vendorInfo.email,
               dateOfBooking: product.vendorInfo.dateOfBooking,
               dateOfDelivery: product.vendorInfo.dateOfDelivery,
               trackingNumber: product.vendorInfo.trackingNumber,
               shippingCompany: product.vendorInfo.shippingCompany,
-              fedexTracking: product.vendorInfo.fedexTracking,
+              proofOfDelivery: product.vendorInfo.proofOfDelivery,
               updatedBy: user.id,
             });
             await existingOrder.save();
@@ -238,30 +295,38 @@ export async function PUT(
             // Create new vendor order
             const vendorOrderData = {
               vendorId: generateVendorId(),
-              vendorName: product.vendorInfo.vendorName || 'Not specified',
-              vendorLocation:
-                product.vendorInfo.vendorLocation || 'Not specified',
+              shopName: product.vendorInfo.shopName || 'Not specified',
+              vendorAddress: product.vendorInfo.address || 'Not specified',
               orderNo: generateOrderNumber(),
               customerId: lead._id,
               customerName: lead.customerName,
+              customerPhone: lead.phoneNumber,
+              customerEmail: lead.customerEmail,
               orderStatus: 'stage1 (engine pull)',
+              productType: product.productType,
               productName: product.productName,
               productAmount: product.productAmount,
               quantity: product.quantity,
-              vin: product.vin,
-              mileageQuote: product.mileageQuote,
               yearOfMfg: product.yearOfMfg,
               make: product.make,
               model: product.model,
-              specification: product.specification,
-              recycler: product.vendorInfo.recycler,
-              modeOfPaymentToRecycler:
-                product.vendorInfo.modeOfPaymentToRecycler,
+              trim: product.trim,
+              engineSize: product.engineSize,
+              partType: product.partType,
+              partNumber: product.partNumber,
+              vin: product.vin,
+              modeOfPayment: product.vendorInfo.modeOfPayment,
+              vendorPaymentMode: product.vendorInfo.modeOfPayment,
+              vendorPaymentAmount: product.vendorInfo.paymentAmount,
+              vendorContactPerson: product.vendorInfo.contactPerson,
+              vendorPhone: product.vendorInfo.phone,
+              vendorEmail: product.vendorInfo.email,
               dateOfBooking: product.vendorInfo.dateOfBooking,
               dateOfDelivery: product.vendorInfo.dateOfDelivery,
               trackingNumber: product.vendorInfo.trackingNumber,
               shippingCompany: product.vendorInfo.shippingCompany,
-              fedexTracking: product.vendorInfo.fedexTracking,
+              proofOfDelivery: product.vendorInfo.proofOfDelivery,
+              shippingAddress: lead.shippingInfo?.fullAddress || lead.billingInfo?.fullAddress,
               createdBy: user.id,
               updatedBy: user.id,
             };

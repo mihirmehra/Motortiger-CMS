@@ -22,6 +22,7 @@ export class ExportService {
       'Lead Number': lead.leadNumber,
       Date: new Date(lead.date).toLocaleDateString(),
       'Customer Name': lead.customerName,
+      'Description': lead.description || '',
       'Phone Number': lead.phoneNumber,
       Email: lead.customerEmail,
       Status: lead.status,

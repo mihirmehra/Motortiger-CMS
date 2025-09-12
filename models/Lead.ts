@@ -69,11 +69,15 @@ export interface ILeadProduct {
     shopName?: string;
     address?: string;
     modeOfPayment?: string;
+    paymentAmount?: number;
     dateOfBooking?: Date;
     dateOfDelivery?: Date;
     trackingNumber?: string;
     shippingCompany?: string;
     proofOfDelivery?: string; // File path for uploaded document
+    contactPerson?: string;
+    phone?: string;
+    email?: string;
   };
 }
 
@@ -86,6 +90,7 @@ export interface ILead {
   orderNo?: string;
   customerId?: string;
   customerName: string;
+  description?: string;
   phoneNumber: string;
   alternateNumber?: string;
   customerEmail?: string;
@@ -201,11 +206,15 @@ const LeadProductSchema = new Schema<ILeadProduct>({
     shopName: String,
     address: String,
     modeOfPayment: String,
+    paymentAmount: Number,
     dateOfBooking: Date,
     dateOfDelivery: Date,
     trackingNumber: String,
     shippingCompany: String,
     proofOfDelivery: String,
+    contactPerson: String,
+    phone: String,
+    email: String,
   },
 });
 
@@ -219,6 +228,7 @@ const LeadSchema = new Schema(
     orderNo: { type: String, ref: 'VendorOrder' },
     customerId: { type: String, ref: 'User' },
     customerName: { type: String, required: true },
+    description: { type: String },
     phoneNumber: { type: String, required: true },
     alternateNumber: String,
     customerEmail: {

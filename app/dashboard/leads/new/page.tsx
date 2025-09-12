@@ -35,12 +35,16 @@ interface Product {
   vendorInfo: {
     shopName: string;
     address: string;
+    paymentAmount: string;
     modeOfPayment: string;
     dateOfBooking: string;
     dateOfDelivery: string;
     trackingNumber: string;
     shippingCompany: string;
     proofOfDelivery: string;
+    contactPerson: string;
+    phone: string;
+    email: string;
   };
 }
 
@@ -50,6 +54,7 @@ export default function NewLeadPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     customerName: '',
+    description: '',
     customerEmail: '',
     phoneNumber: '',
     alternateNumber: '',
@@ -119,13 +124,29 @@ export default function NewLeadPage() {
       shopName: '',
       address: '',
       modeOfPayment: '',
+      paymentAmount: '',
       dateOfBooking: '',
       dateOfDelivery: '',
       trackingNumber: '',
       shippingCompany: '',
       proofOfDelivery: '',
+      contactPerson: '',
+      phone: '',
+      email: '',
     }
   }]);
+
+  // Add state for follow-up status and date/time
+  const [followupDateTime, setFollowupDateTime] = useState({ date: '', time: '' });
+
+  // Define which statuses require follow-up date/time
+  const followupStatuses = [
+    'Follow up',
+    'Desision Follow up',
+    'Payment Follow up',
+    'Customer Waiting for respond'
+  ];
+  const isFollowupStatus = followupStatuses.includes(formData.status);
 
   const router = useRouter();
 
@@ -189,13 +210,16 @@ export default function NewLeadPage() {
         shopName: '',
         address: '',
         modeOfPayment: '',
+        paymentAmount: '',
         dateOfBooking: '',
         dateOfDelivery: '',
         trackingNumber: '',
         shippingCompany: '',
         proofOfDelivery: '',
-      }
-    }]);
+        contactPerson: '',
+        phone: '',
+        email: '',
+    }}]);
   };
 
   const removeProduct = (index: number) => {
@@ -223,6 +247,13 @@ export default function NewLeadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate follow-up date and time if status is follow-up
+    if (isFollowupStatus && (!followupDateTime.date || !followupDateTime.time)) {
+      alert('Please select follow-up date and time for follow-up status');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -247,11 +278,15 @@ export default function NewLeadPage() {
           shopName: product.vendorInfo.shopName || undefined,
           address: product.vendorInfo.address || undefined,
           modeOfPayment: product.vendorInfo.modeOfPayment || undefined,
+          paymentAmount: product.vendorInfo.paymentAmount ? parseFloat(product.vendorInfo.paymentAmount) : undefined,
           dateOfBooking: product.vendorInfo.dateOfBooking || undefined,
           dateOfDelivery: product.vendorInfo.dateOfDelivery || undefined,
           trackingNumber: product.vendorInfo.trackingNumber || undefined,
           shippingCompany: product.vendorInfo.shippingCompany || undefined,
           proofOfDelivery: product.vendorInfo.proofOfDelivery || undefined,
+          contactPerson: product.vendorInfo.contactPerson || undefined,
+          phone: product.vendorInfo.phone || undefined,
+          email: product.vendorInfo.email || undefined,
         }
       }));
       
@@ -270,7 +305,12 @@ export default function NewLeadPage() {
         disputeDate: paymentData.disputeDate ? new Date(paymentData.disputeDate) : undefined,
         refundDate: paymentData.refundDate ? new Date(paymentData.refundDate) : undefined,
         products: productsData,
-        assignedAgent: formData.assignedAgent || undefined
+        assignedAgent: formData.assignedAgent || undefined,
+        // Include follow-up date and time if it's a follow-up status
+        ...(isFollowupStatus && {
+          followupDate: followupDateTime.date,
+          followupTime: followupDateTime.time
+        })
       };
       
       const response = await fetch('/api/leads', {
@@ -297,7 +337,9 @@ export default function NewLeadPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -388,6 +430,19 @@ export default function NewLeadPage() {
                   />
                 </div>
 
+                <div className="md:col-span-2">
+                  <Label htmlFor="description">Description</Label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Enter customer description or additional notes..."
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="customerEmail">Customer Email</Label>
                   <Input
@@ -399,18 +454,6 @@ export default function NewLeadPage() {
                     className="mt-1"
                   />
                 </div>
-
-                <div>
-                  <Label htmlFor="alternateNumber">Alternate Number</Label>
-                  <Input
-                    id="alternateNumber"
-                    name="alternateNumber"
-                    value={formData.alternateNumber}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <select
@@ -425,6 +468,33 @@ export default function NewLeadPage() {
                     ))}
                   </select>
                 </div>
+                
+                {isFollowupStatus && (
+                    <>
+                      <div>
+                        <Label htmlFor="followupDate">Follow-up Date *</Label>
+                        <Input
+                          id="followupDate"
+                          type="date"
+                          value={followupDateTime.date}
+                          onChange={e => setFollowupDateTime(dt => ({ ...dt, date: e.target.value }))}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="followupTime">Follow-up Time *</Label>
+                        <Input
+                          id="followupTime"
+                          type="time"
+                          value={followupDateTime.time}
+                          onChange={e => setFollowupDateTime(dt => ({ ...dt, time: e.target.value }))}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                    </>
+                )}
 
                 <div>
                   <Label htmlFor="assignedAgent">Assigned Agent</Label>
@@ -890,10 +960,49 @@ export default function NewLeadPage() {
                         </div>
 
                         <div>
+                          <Label>Contact Person</Label>
+                          <Input
+                            value={product.vendorInfo.contactPerson}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.contactPerson', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Vendor Phone</Label>
+                          <Input
+                            value={product.vendorInfo.phone}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.phone', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Vendor Email</Label>
+                          <Input
+                            type="email"
+                            value={product.vendorInfo.email}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.email', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
                           <Label>Mode of Payment</Label>
                           <Input
                             value={product.vendorInfo.modeOfPayment}
                             onChange={(e) => updateProduct(index, 'vendorInfo.modeOfPayment', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label>Payment Amount</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={product.vendorInfo.paymentAmount}
+                            onChange={(e) => updateProduct(index, 'vendorInfo.paymentAmount', e.target.value)}
                             className="mt-1"
                           />
                         </div>
