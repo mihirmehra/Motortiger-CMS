@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    let baseFilter = { ...dateFilter };
+    let baseFilter: Record<string, any> = { ...dateFilter };
     const dataFilter = permissions.getDataFilter();
     
     // Combine permission filter with date filter
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
 
     // Payment Methods
     const paymentMethods = await Lead.aggregate([
-      { $match: { ...baseFilter, modeOfPayment: { $ne: null, $ne: '' } } },
+      { $match: { ...baseFilter, modeOfPayment: { $nin: [null, ''] } } },
       {
         $group: {
           _id: '$modeOfPayment',
