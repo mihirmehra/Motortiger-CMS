@@ -45,7 +45,7 @@ export function useFollowupNotifications(user: any) {
               });
               
               // Mark as shown
-              setShownNotifications(prev => new Set([...prev, followup._id]));
+              setShownNotifications(prev => new Set([...Array.from(prev), followup._id]));
             });
           }
 
