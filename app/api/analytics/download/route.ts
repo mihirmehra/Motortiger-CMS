@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    let baseFilter = { ...dateFilter };
+    let baseFilter: Record<string, any> = { ...dateFilter };
     const dataFilter = permissions.getDataFilter();
     
     if (Object.keys(dataFilter).length > 0) {
