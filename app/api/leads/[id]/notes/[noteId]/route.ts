@@ -44,7 +44,7 @@ export async function PUT(
     }
 
     // Find and update the specific note
-    const noteIndex = lead.notes.findIndex(note => note._id.toString() === params.noteId);
+    const noteIndex = lead.notes.findIndex((note:any) => note._id.toString() === params.noteId);
     if (noteIndex === -1) {
       return NextResponse.json({ error: 'Note not found' }, { status: 404 });
     }
