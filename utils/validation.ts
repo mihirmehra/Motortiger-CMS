@@ -52,16 +52,18 @@ export const productSchema = z.object({
   partType: z.enum(['used', 'new']).optional(),
   partNumber: z.string().optional(),
   vin: z.string().optional(),
-  vendorInfo: z.object({
-    shopName: z.string().optional(),
-    address: z.string().optional(),
-    modeOfPayment: z.string().optional(),
-    dateOfBooking: z.string().optional(),
-    dateOfDelivery: z.string().optional(),
-    trackingNumber: z.string().optional(),
-    shippingCompany: z.string().optional(),
-    proofOfDelivery: z.string().optional(),
-  }).optional(),
+  vendorInfo: z
+    .object({
+      shopName: z.string().optional(),
+      address: z.string().optional(),
+      modeOfPayment: z.string().optional(),
+      dateOfBooking: z.string().optional(),
+      dateOfDelivery: z.string().optional(),
+      trackingNumber: z.string().optional(),
+      shippingCompany: z.string().optional(),
+      proofOfDelivery: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const leadSchema = z.object({
@@ -89,7 +91,10 @@ export const leadSchema = z.object({
   callType: z.string().optional(),
   // Payment fields
   modeOfPayment: z.string().optional(),
-  paymentPortal: z.enum(['EasyPayDirect', 'Authorize.net']).optional().or(z.literal('')),
+  paymentPortal: z
+    .enum(['EasyPayDirect', 'Authorize.net'])
+    .optional()
+    .or(z.literal('')),
   cardNumber: z.string().optional(),
   expiry: z.string().optional(),
   paymentDate: z.string().optional(),
@@ -97,6 +102,8 @@ export const leadSchema = z.object({
   pendingBalance: z.number().optional(),
   costPrice: z.number().optional(),
   refunded: z.number().optional(),
+  tentativeQuotedPrice: z.number().optional(),
+  tentativeCostPrice: z.number().optional(),
   disputeCategory: z.string().optional(),
   disputeReason: z.string().optional(),
   disputeDate: z.string().optional(),
@@ -181,12 +188,17 @@ export const paymentRecordSchema = z.object({
   modeOfPayment: z.string().min(1, 'Payment mode is required'),
   salesPrice: z.number().positive('Sales price must be positive'),
   paymentDate: z.string().or(z.date()),
-  paymentPortal: z.enum(['EasyPayDirect', 'Authorize.net']).optional().or(z.literal('')),
+  paymentPortal: z
+    .enum(['EasyPayDirect', 'Authorize.net'])
+    .optional()
+    .or(z.literal('')),
   cardNumber: z.string().optional(),
   expiry: z.string().optional(),
   pendingBalance: z.number().optional(),
   costPrice: z.number().optional(),
   refunded: z.number().optional(),
+  tentativeQuotedPrice: z.number().optional(),
+  tentativeCostPrice: z.number().optional(),
   disputeCategory: z.string().optional(),
   disputeReason: z.string().optional(),
   disputeDate: z.string().optional(),

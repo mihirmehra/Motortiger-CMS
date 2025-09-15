@@ -97,25 +97,17 @@ export default function LeadsPage() {
   const router = useRouter();
 
   const statusOptions = [
-    'New',
-    'Connected',
-    'Nurturing',
-    'Waiting for respond',
     'Follow up',
     'Desision Follow up',
     'Payment Follow up',
-    'Customer Waiting for respond',
-    'Payment Under Process',
-    'Customer making payment',
     'Wrong Number',
     'Taking Information Only',
     'Not Intrested',
     'Out Of Scope',
-    'Trust Issues',
-    'Voice mail',
     'Incomplete Information',
+    'Sourcing',
     'Sale Payment Done',
-    'Sale Closed',
+    'Product Purchased'
   ];
 
   const getStatusColor = (status: string) => {
@@ -131,7 +123,8 @@ export default function LeadsPage() {
       'Payment Under Process': 'bg-indigo-100 text-indigo-800',
       'Customer making payment': 'bg-pink-100 text-pink-800',
       'Sale Payment Done': 'bg-emerald-100 text-emerald-800',
-      'Sale Closed': 'bg-gray-100 text-gray-800',
+      'Product Purchased': 'bg-gray-100 text-gray-800',
+      'Sourcing': 'bg-cyan-100 text-cyan-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };

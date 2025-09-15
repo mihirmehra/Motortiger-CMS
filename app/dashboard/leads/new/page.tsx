@@ -151,9 +151,17 @@ export default function NewLeadPage() {
   const router = useRouter();
 
   const statusOptions = [
-    'New', 'Connected', 'Nurturing', 'Waiting for respond', 'Follow up', 'Desision Follow up', 'Payment Follow up',
-    'Customer Waiting for respond', 'Payment Under Process',
-    'Customer making payment','Wrong Number', 'Taking Information Only', 'Not Intrested', 'Out Of Scope', 'Trust Issues', 'Voice mail', 'Incomplete Information', 'Sale Payment Done', 'Sale Closed'
+    'Follow up',
+    'Desision Follow up',
+    'Payment Follow up',
+    'Wrong Number',
+    'Taking Information Only',
+    'Not Intrested',
+    'Out Of Scope',
+    'Incomplete Information',
+    'Sourcing',
+    'Sale Payment Done',
+    'Product Purchased'
   ];
 
   useEffect(() => {

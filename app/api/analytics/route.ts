@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/dbConfig';
 import Lead from '@/models/Lead';
+import VendorOrder from '@/models/VendorOrder';
 import Sale from '@/models/Sale';
 import PaymentRecord from '@/models/PaymentRecord';
+import Target from '@/models/Target';
 import User from '@/models/User';
 import { verifyToken, extractTokenFromRequest } from '@/middleware/auth';
 import { PermissionManager } from '@/middleware/permissions';
@@ -27,26 +29,24 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate') || new Date(new Date().getFullYear(), 0, 1).toISOString();
-    const endDate = searchParams.get('endDate') || new Date().toISOString();
+    const startDate = searchParams.get('startDate') || new Date().toISOString().split('T')[0];
+    const endDate = searchParams.get('endDate') || new Date().toISOString().split('T')[0];
     const userIds = searchParams.get('userIds')?.split(',') || [];
 
     const dateFilter = {
       createdAt: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
+        $gte: new Date(startDate + 'T00:00:00.000Z'),
+        $lte: new Date(endDate + 'T23:59:59.999Z')
       }
     };
 
     let baseFilter: Record<string, any> = { ...dateFilter };
     const dataFilter = permissions.getDataFilter();
     
-    // Combine permission filter with date filter
     if (Object.keys(dataFilter).length > 0) {
       baseFilter = { $and: [dateFilter, dataFilter] };
     }
 
-    // Add user filter if specified
     if (userIds.length > 0) {
       const userFilter = { assignedAgent: { $in: userIds } };
       baseFilter = baseFilter.$and 
@@ -54,60 +54,68 @@ export async function GET(request: NextRequest) {
         : { $and: [baseFilter, userFilter] };
     }
 
-    // Status Distribution
-    const statusDistribution = await Lead.aggregate([
-      { $match: baseFilter },
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
+    // Get all leads for the period
+    const leads = await Lead.find(baseFilter)
+      .populate('assignedAgent', 'name email')
+      .lean();
 
-    const statusData = statusDistribution.map((item, index) => ({
-      name: item._id,
-      value: item.count,
-      color: ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'][index % 5]
+    // Status Distribution
+    const statusDistribution = leads.reduce((acc: any, lead) => {
+      const status = lead.status;
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusDistributionArray = Object.entries(statusDistribution).map(([name, value]) => ({
+      name,
+      value: value as number,
+      color: getStatusColor(name)
     }));
 
-    // Monthly Trends
-    const monthlyTrends = await Lead.aggregate([
-      { $match: baseFilter },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
-          },
-          leads: { $sum: 1 },
-          sales: {
-            $sum: {
-              $cond: [
-                { $in: ['$status', ['Sale Payment Done', 'Sale Closed']] },
-                1,
-                0
-              ]
-            }
-          },
-          revenue: {
-            $sum: {
-              $cond: [
-                { $and: [{ $ne: ['$salesPrice', null] }, { $ne: ['$salesPrice', 0] }] },
-                '$salesPrice',
-                0
-              ]
-            }
+    // Monthly Trends (last 6 months)
+    const monthlyTrends = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+      const monthLeads = await Lead.countDocuments({
+        ...baseFilter,
+        createdAt: { $gte: monthStart, $lte: monthEnd }
+      });
+
+      const monthSales = await Lead.countDocuments({
+        ...baseFilter,
+        status: { $in: ['Sale Payment Done', 'Product Purchased'] },
+        createdAt: { $gte: monthStart, $lte: monthEnd }
+      });
+
+      const monthRevenue = await Lead.aggregate([
+        {
+          $match: {
+            ...baseFilter,
+            status: { $in: ['Sale Payment Done', 'Product Purchased'] },
+            createdAt: { $gte: monthStart, $lte: monthEnd }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$salesPrice' }
           }
         }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
-    ]);
+      ]);
 
-    const monthlyData = monthlyTrends.map(item => ({
-      month: `${item._id.year}-${item._id.month.toString().padStart(2, '0')}`,
-      leads: item.leads,
-      sales: item.sales,
-      revenue: item.revenue
-    }));
+      monthlyTrends.push({
+        month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        leads: monthLeads,
+        sales: monthSales,
+        revenue: monthRevenue[0]?.total || 0
+      });
+    }
 
-    // Agent Performance
+    // Agent Performance (All Status)
     const agentPerformance = await Lead.aggregate([
       { $match: baseFilter },
       {
@@ -124,52 +132,195 @@ export async function GET(request: NextRequest) {
           _id: '$assignedAgent',
           agentName: { $first: '$agent.name' },
           totalLeads: { $sum: 1 },
-          convertedLeads: {
+          followups: {
             $sum: {
               $cond: [
-                { $in: ['$status', ['Sale Payment Done', 'Sale Closed']] },
+                { $in: ['$status', ['Follow up', 'Desision Follow up', 'Payment Follow up']] },
                 1,
                 0
               ]
             }
           },
-          totalRevenue: {
+          salePaymentDone: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'Sale Payment Done'] }, 1, 0]
+            }
+          },
+          engines: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'engine'] }
+                }
+              }
+            }
+          },
+          transmissions: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'transmission'] }
+                }
+              }
+            }
+          },
+          parts: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'part'] }
+                }
+              }
+            }
+          },
+          totalRevenue: { $sum: { $ifNull: ['$salesPrice', 0] } },
+          totalProductAmount: {
+            $sum: {
+              $reduce: {
+                input: '$products',
+                initialValue: 0,
+                in: { $add: ['$$value', { $ifNull: ['$$this.productAmount', 0] }] }
+              }
+            }
+          },
+          tentativeMargin: { $sum: { $ifNull: ['$tentativeMargin', 0] } }
+        }
+      },
+      { $sort: { totalLeads: -1 } }
+    ]);
+
+    // Agent Performance (Product Purchased Only)
+    const agentPerformanceProductPurchased = await Lead.aggregate([
+      { 
+        $match: { 
+          ...baseFilter,
+          status: 'Product Purchased'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedAgent',
+          foreignField: '_id',
+          as: 'agent'
+        }
+      },
+      { $unwind: '$agent' },
+      {
+        $group: {
+          _id: '$assignedAgent',
+          agentName: { $first: '$agent.name' },
+          totalLeads: { $sum: 1 },
+          converted: { $sum: 1 },
+          engines: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'engine'] }
+                }
+              }
+            }
+          },
+          transmissions: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'transmission'] }
+                }
+              }
+            }
+          },
+          parts: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'part'] }
+                }
+              }
+            }
+          },
+          totalSalesPrice: { $sum: { $ifNull: ['$salesPrice', 0] } },
+          totalCostPrice: { $sum: { $ifNull: ['$costPrice', 0] } },
+          totalMarginTentative: { $sum: { $ifNull: ['$totalMargin', 0] } }
+        }
+      },
+      { $sort: { totalLeads: -1 } }
+    ]);
+
+    // Team Performance
+    const teamStats = await Lead.aggregate([
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: null,
+          totalLeads: { $sum: 1 },
+          converted: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'Product Purchased'] }, 1, 0]
+            }
+          },
+          followups: {
             $sum: {
               $cond: [
-                { $and: [{ $ne: ['$salesPrice', null] }, { $ne: ['$salesPrice', 0] }] },
-                '$salesPrice',
+                { $in: ['$status', ['Follow up', 'Desision Follow up', 'Payment Follow up']] },
+                1,
                 0
               ]
             }
-          }
+          },
+          salesPaymentDone: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'Sale Payment Done'] }, 1, 0]
+            }
+          },
+          totalSalesPrice: { $sum: { $ifNull: ['$salesPrice', 0] } },
+          totalCostPrice: { $sum: { $ifNull: ['$costPrice', 0] } },
+          totalMarginTentative: { $sum: { $ifNull: ['$totalMargin', 0] } }
         }
       }
     ]);
 
-    const agentData = agentPerformance.map(agent => ({
-      ...agent,
-      conversionRate: agent.totalLeads > 0 ? (agent.convertedLeads / agent.totalLeads) * 100 : 0
-    }));
+    const teamPerformance = teamStats[0] || {
+      totalLeads: 0,
+      converted: 0,
+      followups: 0,
+      salesPaymentDone: 0,
+      totalSalesPrice: 0,
+      totalCostPrice: 0,
+      totalMarginTentative: 0
+    };
 
-    // Payment Methods
+    // Payment Methods Distribution
     const paymentMethods = await Lead.aggregate([
-      { $match: { ...baseFilter, modeOfPayment: { $nin: [null, ''] } } },
+      { 
+        $match: { 
+          ...baseFilter,
+          modeOfPayment: { $exists: true, $ne: null, $ne: '' }
+        }
+      },
       {
         $group: {
           _id: '$modeOfPayment',
           count: { $sum: 1 },
           totalAmount: { $sum: { $ifNull: ['$salesPrice', 0] } }
         }
-      }
+      },
+      { $sort: { count: -1 } }
     ]);
 
-    const paymentData = paymentMethods.map(item => ({
-      method: item._id,
-      count: item.count,
-      totalAmount: item.totalAmount
+    const paymentMethodsFormatted = paymentMethods.map(pm => ({
+      method: pm._id,
+      count: pm.count,
+      totalAmount: pm.totalAmount
     }));
 
-    // Product Types
+    // Product Types Distribution
     const productTypes = await Lead.aggregate([
       { $match: baseFilter },
       { $unwind: '$products' },
@@ -179,13 +330,14 @@ export async function GET(request: NextRequest) {
           count: { $sum: 1 },
           revenue: { $sum: { $ifNull: ['$salesPrice', 0] } }
         }
-      }
+      },
+      { $sort: { count: -1 } }
     ]);
 
-    const productData = productTypes.map(item => ({
-      type: item._id,
-      count: item.count,
-      revenue: item.revenue
+    const productTypesFormatted = productTypes.map(pt => ({
+      type: pt._id,
+      count: pt.count,
+      revenue: pt.revenue
     }));
 
     // State Distribution
@@ -208,45 +360,90 @@ export async function GET(request: NextRequest) {
       { $limit: 10 }
     ]);
 
-    const stateData = stateDistribution.map(item => ({
-      state: item._id,
-      count: item.count
+    const stateDistributionFormatted = stateDistribution.map(sd => ({
+      state: sd._id,
+      count: sd.count
     }));
 
-    // Summary calculations
-    const totalLeads = await Lead.countDocuments(baseFilter);
-    const totalRevenue = await Lead.aggregate([
-      { $match: baseFilter },
-      { $group: { _id: null, total: { $sum: { $ifNull: ['$salesPrice', 0] } } } }
-    ]);
+    // Summary Statistics
+    const totalLeads = leads.length;
+    const totalRevenue = leads.reduce((sum, lead) => sum + (lead.salesPrice || 0), 0);
+    const averageLeadValue = totalLeads > 0 ? totalRevenue / totalLeads : 0;
+    const convertedLeads = leads.filter(lead => 
+      ['Sale Payment Done', 'Product Purchased'].includes(lead.status)
+    ).length;
+    const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+    const totalMargin = leads.reduce((sum, lead) => sum + (lead.totalMargin || 0), 0);
 
-    const totalMargin = await Lead.aggregate([
-      { $match: baseFilter },
-      { $group: { _id: null, total: { $sum: { $ifNull: ['$totalMargin', 0] } } } }
-    ]);
-
-    const convertedLeads = await Lead.countDocuments({
-      ...baseFilter,
-      status: { $in: ['Sale Payment Done', 'Sale Closed'] }
+    // Get current month target data for tentative report
+    const currentDate = new Date();
+    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    
+    const monthlyTarget = await Target.findOne({
+      isActive: true,
+      startDate: { $lte: monthEnd },
+      endDate: { $gte: monthStart }
     });
 
-    const summary = {
-      totalLeads,
-      totalRevenue: totalRevenue[0]?.total || 0,
-      averageLeadValue: totalLeads > 0 ? (totalRevenue[0]?.total || 0) / totalLeads : 0,
-      conversionRate: totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0,
-      totalMargin: totalMargin[0]?.total || 0
+    // Calculate tentative report data
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const todayLeads = await Lead.find({
+      ...baseFilter,
+      createdAt: { $gte: todayStart, $lte: todayEnd }
+    }).lean();
+
+    const monthToDateLeads = await Lead.find({
+      ...baseFilter,
+      createdAt: { $gte: monthStart, $lte: currentDate }
+    }).lean();
+
+    const followupLeads = monthToDateLeads.filter(lead => 
+      ['Follow up', 'Desision Follow up', 'Payment Follow up'].includes(lead.status)
+    );
+
+    const tentativeReport = {
+      monthlyTarget: monthlyTarget?.targetAmount || 0,
+      dailyTarget: monthlyTarget ? Math.round(monthlyTarget.targetAmount / monthEnd.getDate()) : 0,
+      targetAsOfToday: monthlyTarget ? Math.round((monthlyTarget.targetAmount / monthEnd.getDate()) * currentDate.getDate()) : 0,
+      marginAchievedTillDate: monthToDateLeads.reduce((sum, lead) => sum + (lead.totalMargin || 0), 0),
+      todayCalls: todayLeads.length,
+      todayEngines: todayLeads.reduce((sum, lead) => 
+        sum + (lead.products?.filter((p: any) => p.productType === 'engine').length || 0), 0
+      ),
+      todayParts: todayLeads.reduce((sum, lead) => 
+        sum + (lead.products?.filter((p: any) => p.productType === 'part').length || 0), 0
+      ),
+      todayAchieved: todayLeads.reduce((sum, lead) => sum + (lead.totalMargin || 0), 0),
+      tentativeFollowups: followupLeads.length,
+      tentativeSales: followupLeads.reduce((sum, lead) => sum + (lead.salesPrice || 0), 0),
+      tentativeMargin: followupLeads.reduce((sum, lead) => sum + (lead.tentativeMargin || 0), 0)
     };
 
-    return NextResponse.json({
-      statusDistribution: statusData,
-      monthlyTrends: monthlyData,
-      agentPerformance: agentData,
-      paymentMethods: paymentData,
-      productTypes: productData,
-      stateDistribution: stateData,
-      summary
-    });
+    const response = {
+      statusDistribution: statusDistributionArray,
+      monthlyTrends,
+      agentPerformance,
+      agentPerformanceProductPurchased,
+      teamPerformance,
+      paymentMethods: paymentMethodsFormatted,
+      productTypes: productTypesFormatted,
+      stateDistribution: stateDistributionFormatted,
+      tentativeReport,
+      summary: {
+        totalLeads,
+        totalRevenue,
+        averageLeadValue,
+        conversionRate,
+        totalMargin
+      }
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Analytics error:', error);
@@ -255,4 +452,30 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function getStatusColor(status: string): string {
+  const colors: { [key: string]: string } = {
+    'New': '#3B82F6',
+    'Connected': '#10B981',
+    'Nurturing': '#F59E0B',
+    'Waiting for respond': '#F97316',
+    'Customer Waiting for respond': '#8B5CF6',
+    'Follow up': '#06B6D4',
+    'Desision Follow up': '#F43F5E',
+    'Payment Follow up': '#D946EF',
+    'Payment Under Process': '#6366F1',
+    'Customer making payment': '#EC4899',
+    'Wrong Number': '#EF4444',
+    'Taking Information Only': '#84CC16',
+    'Not Intrested': '#6B7280',
+    'Out Of Scope': '#64748B',
+    'Trust Issues': '#71717A',
+    'Voice mail': '#8B5CF6',
+    'Incomplete Information': '#DC2626',
+    'Sale Payment Done': '#059669',
+    'Product Purchased': '#525252',
+    'Sourcing': '#0891B2'
+  };
+  return colors[status] || '#6B7280';
 }

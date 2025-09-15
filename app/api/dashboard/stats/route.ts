@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const totalLeads = await Lead.countDocuments(dataFilter);
     const activeLeads = await Lead.countDocuments({
       ...dataFilter,
-      status: { $nin: ['Sale Closed'] }
+      status: { $nin: ['Product Purchased'] }
     });
 
     // Get sales stats

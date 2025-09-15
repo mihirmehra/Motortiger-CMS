@@ -113,25 +113,26 @@ export default function LeadDetailPage() {
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-        New: 'bg-blue-100 text-blue-800',
-        Connected: 'bg-green-100 text-green-800',
-        Nurturing: 'bg-yellow-100 text-yellow-800',
-        'Waiting for respond': 'bg-orange-100 text-orange-800',
-        'Customer Waiting for respond': 'bg-purple-100 text-purple-800',
-        'Follow up': 'bg-cyan-100 text-cyan-800',
-        'Desision Follow up': 'bg-rose-100 text-rose-800',
-        'Payment Follow up': 'bg-fuchsia-100 text-fuchsia-800',
-        'Payment Under Process': 'bg-indigo-100 text-indigo-800',
-        'Customer making payment': 'bg-pink-100 text-pink-800',
-        'Wrong Number': 'bg-red-100 text-red-800',
-        'Taking Information Only': 'bg-lime-100 text-lime-800',
-        'Not Intrested': 'bg-gray-100 text-gray-800',
-        'Out Of Scope': 'bg-slate-100 text-slate-800',
-        'Trust Issues': 'bg-zinc-100 text-zinc-800',
-        'Voice mail': 'bg-violet-100 text-violet-800',
-        'Incomplete Information': 'bg-red-200 text-red-900',
-        'Sale Payment Done': 'bg-emerald-100 text-emerald-800',
-        'Sale Closed': 'bg-neutral-100 text-neutral-800',
+      New: 'bg-blue-100 text-blue-800',
+      Connected: 'bg-green-100 text-green-800',
+      Nurturing: 'bg-yellow-100 text-yellow-800',
+      'Waiting for respond': 'bg-orange-100 text-orange-800',
+      'Customer Waiting for respond': 'bg-purple-100 text-purple-800',
+      'Follow up': 'bg-cyan-100 text-cyan-800',
+      'Desision Follow up': 'bg-rose-100 text-rose-800',
+      'Payment Follow up': 'bg-fuchsia-100 text-fuchsia-800',
+      'Payment Under Process': 'bg-indigo-100 text-indigo-800',
+      'Customer making payment': 'bg-pink-100 text-pink-800',
+      'Wrong Number': 'bg-red-100 text-red-800',
+      'Taking Information Only': 'bg-lime-100 text-lime-800',
+      'Not Intrested': 'bg-gray-100 text-gray-800',
+      'Out Of Scope': 'bg-slate-100 text-slate-800',
+      'Trust Issues': 'bg-zinc-100 text-zinc-800',
+      'Voice mail': 'bg-violet-100 text-violet-800',
+      'Incomplete Information': 'bg-red-200 text-red-900',
+      'Sale Payment Done': 'bg-emerald-100 text-emerald-800',
+      'Product Purchased': 'bg-neutral-100 text-neutral-800',
+      'Sourcing': 'bg-cyan-100 text-cyan-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -256,7 +257,9 @@ export default function LeadDetailPage() {
                         Description
                       </label>
                       <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{lead.description}</p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {lead.description}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -312,53 +315,77 @@ export default function LeadDetailPage() {
                 {/* Billing Information */}
                 {lead.billingInfo && (
                   <div className="mt-6 pt-6 border-t">
-                    <h4 className="text-lg font-medium mb-4">Billing Information</h4>
+                    <h4 className="text-lg font-medium mb-4">
+                      Billing Information
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {lead.billingInfo.firstName && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">First Name</label>
-                          <p className="text-sm">{lead.billingInfo.firstName}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            First Name
+                          </label>
+                          <p className="text-sm">
+                            {lead.billingInfo.firstName}
+                          </p>
                         </div>
                       )}
                       {lead.billingInfo.lastName && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Last Name</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Last Name
+                          </label>
                           <p className="text-sm">{lead.billingInfo.lastName}</p>
                         </div>
                       )}
                       {lead.billingInfo.fullAddress && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Full Address</label>
-                          <p className="text-sm">{lead.billingInfo.fullAddress}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            Full Address
+                          </label>
+                          <p className="text-sm">
+                            {lead.billingInfo.fullAddress}
+                          </p>
                         </div>
                       )}
                       {lead.billingInfo.addressType && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Address Type</label>
-                          <p className="text-sm capitalize">{lead.billingInfo.addressType}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            Address Type
+                          </label>
+                          <p className="text-sm capitalize">
+                            {lead.billingInfo.addressType}
+                          </p>
                         </div>
                       )}
                       {lead.billingInfo.country && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Country</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Country
+                          </label>
                           <p className="text-sm">{lead.billingInfo.country}</p>
                         </div>
                       )}
                       {lead.billingInfo.state && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">State</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            State
+                          </label>
                           <p className="text-sm">{lead.billingInfo.state}</p>
                         </div>
                       )}
                       {lead.billingInfo.zipCode && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Zip Code</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Zip Code
+                          </label>
                           <p className="text-sm">{lead.billingInfo.zipCode}</p>
                         </div>
                       )}
                       {lead.billingInfo.phone && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Phone</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Phone
+                          </label>
                           <p className="text-sm">{lead.billingInfo.phone}</p>
                         </div>
                       )}
@@ -369,53 +396,79 @@ export default function LeadDetailPage() {
                 {/* Shipping Information */}
                 {lead.shippingInfo && !lead.sameShippingInfo && (
                   <div className="mt-6 pt-6 border-t">
-                    <h4 className="text-lg font-medium mb-4">Shipping Information</h4>
+                    <h4 className="text-lg font-medium mb-4">
+                      Shipping Information
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {lead.shippingInfo.firstName && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">First Name</label>
-                          <p className="text-sm">{lead.shippingInfo.firstName}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            First Name
+                          </label>
+                          <p className="text-sm">
+                            {lead.shippingInfo.firstName}
+                          </p>
                         </div>
                       )}
                       {lead.shippingInfo.lastName && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Last Name</label>
-                          <p className="text-sm">{lead.shippingInfo.lastName}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            Last Name
+                          </label>
+                          <p className="text-sm">
+                            {lead.shippingInfo.lastName}
+                          </p>
                         </div>
                       )}
                       {lead.shippingInfo.fullAddress && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Full Address</label>
-                          <p className="text-sm">{lead.shippingInfo.fullAddress}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            Full Address
+                          </label>
+                          <p className="text-sm">
+                            {lead.shippingInfo.fullAddress}
+                          </p>
                         </div>
                       )}
                       {lead.shippingInfo.addressType && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Address Type</label>
-                          <p className="text-sm capitalize">{lead.shippingInfo.addressType}</p>
+                          <label className="text-sm font-medium text-gray-500">
+                            Address Type
+                          </label>
+                          <p className="text-sm capitalize">
+                            {lead.shippingInfo.addressType}
+                          </p>
                         </div>
                       )}
                       {lead.shippingInfo.country && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Country</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Country
+                          </label>
                           <p className="text-sm">{lead.shippingInfo.country}</p>
                         </div>
                       )}
                       {lead.shippingInfo.state && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">State</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            State
+                          </label>
                           <p className="text-sm">{lead.shippingInfo.state}</p>
                         </div>
                       )}
                       {lead.shippingInfo.zipCode && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Zip Code</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Zip Code
+                          </label>
                           <p className="text-sm">{lead.shippingInfo.zipCode}</p>
                         </div>
                       )}
                       {lead.shippingInfo.phone && (
                         <div>
-                          <label className="text-sm font-medium text-gray-500">Phone</label>
+                          <label className="text-sm font-medium text-gray-500">
+                            Phone
+                          </label>
                           <p className="text-sm">{lead.shippingInfo.phone}</p>
                         </div>
                       )}
@@ -426,7 +479,8 @@ export default function LeadDetailPage() {
                   <div className="mt-6 pt-6 border-t">
                     <div className="p-3 bg-blue-50 rounded-lg">
                       <p className="text-sm text-blue-700">
-                        <strong>Note:</strong> Shipping information is same as billing information
+                        <strong>Note:</strong> Shipping information is same as
+                        billing information
                       </p>
                     </div>
                   </div>
@@ -466,7 +520,9 @@ export default function LeadDetailPage() {
                           <label className="text-sm font-medium text-gray-500">
                             Product Type
                           </label>
-                          <p className="text-sm capitalize">{product.productType}</p>
+                          <p className="text-sm capitalize">
+                            {product.productType}
+                          </p>
                         </div>
                         {product.productAmount && (
                           <div>
@@ -531,7 +587,9 @@ export default function LeadDetailPage() {
                             <label className="text-sm font-medium text-gray-500">
                               Part Type
                             </label>
-                            <p className="text-sm capitalize">{product.partType}</p>
+                            <p className="text-sm capitalize">
+                              {product.partType}
+                            </p>
                           </div>
                         )}
                         {product.partNumber && (
@@ -743,7 +801,9 @@ export default function LeadDetailPage() {
                         <label className="text-sm font-medium text-gray-500">
                           Card Number
                         </label>
-                        <p className="text-sm font-mono">****-****-****-{lead.cardNumber.slice(-4)}</p>
+                        <p className="text-sm font-mono">
+                          ****-****-****-{lead.cardNumber.slice(-4)}
+                        </p>
                       </div>
                     )}
                     {lead.expiry && (

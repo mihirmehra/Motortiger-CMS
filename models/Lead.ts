@@ -18,8 +18,9 @@ export type LeadStatus =
   | 'Trust Issues'
   | 'Voice mail'
   | 'Incomplete Information'
+  | 'Sourcing'
   | 'Sale Payment Done'
-  | 'Sale Closed';
+  | 'Product Purchased';
 
 export interface IBillingInfo {
   firstName?: string;
@@ -120,6 +121,10 @@ export interface ILead {
   costPrice?: number;
   totalMargin?: number;
   refunded?: number;
+  // Tentative pricing fields
+  tentativeQuotedPrice?: number;
+  tentativeCostPrice?: number;
+  tentativeMargin?: number;
   disputeCategory?: string;
   disputeReason?: string;
   disputeDate?: Date;
@@ -261,8 +266,9 @@ const LeadSchema = new Schema(
         'Trust Issues',
         'Voice mail',
         'Incomplete Information',
+        'Sourcing',
         'Sale Payment Done',
-        'Sale Closed',
+        'Product Purchased',
       ],
       default: 'New',
     },
@@ -294,6 +300,10 @@ const LeadSchema = new Schema(
     costPrice: Number,
     totalMargin: { type: Number, default: 0 },
     refunded: Number,
+    // Tentative pricing fields
+    tentativeQuotedPrice: Number,
+    tentativeCostPrice: Number,
+    tentativeMargin: { type: Number, default: 0 },
     disputeCategory: String,
     disputeReason: String,
     disputeDate: Date,
@@ -342,6 +352,9 @@ const LeadSchema = new Schema(
 LeadSchema.pre('save', function (next) {
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
+  }
+  if (this.tentativeQuotedPrice && this.tentativeCostPrice) {
+    this.tentativeMargin = this.tentativeQuotedPrice - this.tentativeCostPrice;
   }
   next();
 });

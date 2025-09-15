@@ -366,7 +366,7 @@ export async function PUT(
     }
 
     // Handle status change to "Sale Closed"
-    if (body.status === 'Sale Closed' && lead.status !== 'Sale Closed') {
+    if (body.status === 'Product Purchased' && lead.status !== 'Product Purchased') {
       // Update target achievement
       if (lead.totalMargin) {
         await Target.updateMany(
