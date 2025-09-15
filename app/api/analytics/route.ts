@@ -301,7 +301,7 @@ export async function GET(request: NextRequest) {
       { 
         $match: { 
           ...baseFilter,
-          modeOfPayment: { $exists: true, $ne: null, $ne: '' }
+          modeOfPayment: { $exists: true, $nin: [null, ''] }
         }
       },
       {
