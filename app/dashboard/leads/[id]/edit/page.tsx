@@ -22,6 +22,7 @@ interface Product {
   productId: string;
   productType: 'engine' | 'transmission' | 'part';
   productName: string;
+  pitchedProductPrice: string;
   productAmount: string;
   quantity: string;
   yearOfMfg: string;
@@ -154,9 +155,17 @@ export default function EditLeadPage() {
   const params = useParams();
 
   const statusOptions = [
-    'New', 'Connected', 'Nurturing', 'Waiting for respond', 'Follow up', 'Desision Follow up', 'Payment Follow up',
-    'Customer Waiting for respond', 'Payment Under Process',
-    'Customer making payment','Wrong Number', 'Taking Information Only', 'Not Intrested', 'Out Of Scope', 'Trust Issues', 'Voice mail', 'Incomplete Information', 'Sale Payment Done', 'Sale Closed'
+    'Follow up',
+    'Desision Follow up',
+    'Payment Follow up',
+    'Wrong Number',
+    'Taking Information Only',
+    'Not Intrested',
+    'Out Of Scope',
+    'Incomplete Information',
+    'Sourcing',
+    'Sale Payment Done',
+    'Product Purchased'
   ];
 
   const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
@@ -249,6 +258,7 @@ export default function EditLeadPage() {
           productId: product.productId || generateProductId(),
           productType: product.productType || 'engine',
           productName: product.productName || '',
+          pitchedProductPrice: product.pitchedProductPrice?.toString() || '',
           productAmount: product.productAmount?.toString() || '',
           quantity: product.quantity?.toString() || '1',
           yearOfMfg: product.yearOfMfg || '',
@@ -277,6 +287,7 @@ export default function EditLeadPage() {
           productId: generateProductId(),
           productType: 'engine',
           productName: '',
+          pitchedProductPrice: '',
           productAmount: '',
           quantity: '1',
           yearOfMfg: '',
@@ -347,6 +358,7 @@ export default function EditLeadPage() {
       productId: generateProductId(),
       productType: 'engine',
       productName: '',
+      pitchedProductPrice: '',
       productAmount: '',
       quantity: '1',
       yearOfMfg: '',
@@ -416,6 +428,7 @@ export default function EditLeadPage() {
         productId: product.productId,
         productType: product.productType,
         productName: product.productName,
+        pitchedProductPrice: product.pitchedProductPrice ? parseFloat(product.pitchedProductPrice) : undefined,
         productAmount: product.productAmount ? parseFloat(product.productAmount) : undefined,
         quantity: product.quantity ? parseInt(product.quantity) : 1,
         yearOfMfg: product.yearOfMfg || undefined,
@@ -990,12 +1003,23 @@ export default function EditLeadPage() {
                       </div>
 
                       <div>
-                        <Label>Product Amount</Label>
+                        <Label>Product Price</Label>
                         <Input
                           type="number"
                           step="0.01"
                           value={product.productAmount}
                           onChange={(e) => updateProduct(index, 'productAmount', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Pitched Product Price</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={product.pitchedProductPrice}
+                          onChange={(e) => updateProduct(index, 'pitchedProductPrice', e.target.value)}
                           className="mt-1"
                         />
                       </div>

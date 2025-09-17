@@ -55,6 +55,7 @@ interface Lead {
     productId: string;
     productType: 'engine' | 'transmission' | 'part';
     productName: string;
+    pitchedProductPrice?: number;
     productAmount?: number;
     quantity?: number;
     yearOfMfg?: string;
@@ -524,10 +525,20 @@ export default function LeadDetailPage() {
                             {product.productType}
                           </p>
                         </div>
+                        {product.pitchedProductPrice && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">
+                              Pitched Product Price
+                            </label>
+                            <p className="text-sm">
+                              ${product.pitchedProductPrice.toLocaleString()}
+                            </p>
+                          </div>
+                        )}
                         {product.productAmount && (
                           <div>
                             <label className="text-sm font-medium text-gray-500">
-                              Amount
+                              Product Price
                             </label>
                             <p className="text-sm">
                               ${product.productAmount.toLocaleString()}

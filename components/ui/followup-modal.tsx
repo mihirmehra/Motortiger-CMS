@@ -31,30 +31,25 @@ export default function FollowupModal({
   leadData, 
   followupType 
 }: FollowupModalProps) {
-  const [followupDate, setFollowupDate] = useState('');
-  const [followupTime, setFollowupTime] = useState('');
-  const [notes, setNotes] = useState('');
+  const [formData, setFormData] = useState<FollowupData>({
+    followupDate: '',
+    followupTime: '',
+    notes: ''
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!followupDate || !followupTime) {
+    
+    if (!formData.followupDate || !formData.followupTime) {
       alert('Please select both date and time for the follow-up');
       return;
     }
 
     setLoading(true);
     try {
-      await onSchedule({
-        followupDate,
-        followupTime,
-        notes: notes.trim() || undefined
-      });
-      
-      // Reset form
-      setFollowupDate('');
-      setFollowupTime('');
-      setNotes('');
+      await onSchedule(formData);
+      setFormData({ followupDate: '', followupTime: '', notes: '' });
       onClose();
     } catch (error) {
       console.error('Error scheduling follow-up:', error);
@@ -63,15 +58,15 @@ export default function FollowupModal({
     }
   };
 
-  const handleClose = () => {
-    setFollowupDate('');
-    setFollowupTime('');
-    setNotes('');
-    onClose();
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -80,75 +75,76 @@ export default function FollowupModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Lead Information */}
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm font-medium">Lead: {leadData.leadNumber}</p>
-            <p className="text-sm text-gray-600">Customer: {leadData.customerName}</p>
-            <p className="text-sm text-blue-600">Type: {followupType}</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">
+              <strong>Customer:</strong> {leadData.customerName}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Lead:</strong> {leadData.leadNumber}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Follow-up Type:</strong> {followupType}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Date Selection */}
-            <div>
-              <Label htmlFor="followupDate">Follow-up Date *</Label>
-              <Input
-                id="followupDate"
-                type="date"
-                value={followupDate}
-                onChange={(e) => setFollowupDate(e.target.value)}
-                required
-                className="mt-1"
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
+          <div>
+            <Label htmlFor="followupDate">Follow-up Date *</Label>
+            <Input
+              id="followupDate"
+              name="followupDate"
+              type="date"
+              value={formData.followupDate}
+              onChange={handleChange}
+              required
+              className="mt-1"
+            />
+          </div>
 
-            {/* Time Selection */}
-            <div>
-              <Label htmlFor="followupTime">Follow-up Time *</Label>
-              <Input
-                id="followupTime"
-                type="time"
-                value={followupTime}
-                onChange={(e) => setFollowupTime(e.target.value)}
-                required
-                className="mt-1"
-              />
-            </div>
+          <div>
+            <Label htmlFor="followupTime">Follow-up Time *</Label>
+            <Input
+              id="followupTime"
+              name="followupTime"
+              type="time"
+              value={formData.followupTime}
+              onChange={handleChange}
+              required
+              className="mt-1"
+            />
+          </div>
 
-            {/* Notes */}
-            <div>
-              <Label htmlFor="followupNotes">Notes (Optional)</Label>
-              <textarea
-                id="followupNotes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any additional notes for this follow-up..."
-                rows={3}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-            </div>
+          <div>
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <textarea
+              id="notes"
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              placeholder="Add any additional notes..."
+              rows={3}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                <Clock className="h-4 w-4" />
-                {loading ? 'Scheduling...' : 'Schedule Follow-up'}
-              </Button>
-            </div>
-          </form>
-        </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              {loading ? 'Scheduling...' : 'Schedule Follow-up'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

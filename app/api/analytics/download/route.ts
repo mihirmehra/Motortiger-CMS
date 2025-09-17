@@ -69,8 +69,6 @@ export async function GET(request: NextRequest) {
       'Sales Price': lead.salesPrice || 0,
       'Cost Price': lead.costPrice || 0,
       'Total Margin': lead.totalMargin || 0,
-      'Tentative Quoted Price': lead.tentativeQuotedPrice || 0,
-      'Tentative Cost Price': lead.tentativeCostPrice || 0,
       'Tentative Margin': lead.tentativeMargin || 0,
       'Payment Mode': lead.modeOfPayment || '',
       'Payment Portal': lead.paymentPortal || '',

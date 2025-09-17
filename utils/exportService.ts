@@ -26,7 +26,9 @@ export class ExportService {
       'Phone Number': lead.phoneNumber,
       Email: lead.customerEmail,
       Status: lead.status,
-      'Product Name': lead.productName || '',
+      'Product Name': lead.products?.[0]?.productName || '',
+      'Product Price': lead.products?.[0]?.productAmount || 0,
+      'Pitched Product Price': lead.products?.[0]?.pitchedProductPrice || 0,
       'Sales Price': lead.salesPrice || 0,
       'Assigned Agent': lead.assignedAgent?.name || '',
       'Created Date': new Date(lead.createdAt).toLocaleDateString(),
@@ -43,6 +45,7 @@ export class ExportService {
       'Order Status': order.orderStatus,
       'Grand Total': order.grandTotal || 0,
       'Product Name': order.productName || '',
+      'Product Price': order.productAmount || 0,
       'Tracking ID': order.trackingId || '',
       'Created Date': new Date(order.createdAt).toLocaleDateString(),
     }));

@@ -49,6 +49,7 @@ export interface ILeadProduct {
   productType: 'engine' | 'transmission' | 'part';
   productName: string;
   productAmount?: number;
+  pitchedProductPrice?: number;
   quantity?: number;
   yearOfMfg?: string;
   make?: string;
@@ -190,6 +191,7 @@ const LeadProductSchema = new Schema<ILeadProduct>({
   },
   productName: { type: String, required: true },
   productAmount: Number,
+  pitchedProductPrice: Number,
   quantity: Number,
   yearOfMfg: String,
   make: String,
@@ -352,9 +354,6 @@ const LeadSchema = new Schema(
 LeadSchema.pre('save', function (next) {
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
-  }
-  if (this.tentativeQuotedPrice && this.tentativeCostPrice) {
-    this.tentativeMargin = this.tentativeQuotedPrice - this.tentativeCostPrice;
   }
   next();
 });

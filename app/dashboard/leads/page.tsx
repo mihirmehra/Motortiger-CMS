@@ -48,6 +48,7 @@ interface Lead {
   products: Array<{
     productName: string;
     productAmount?: number;
+    pitchedProductPrice?: number;
     quantity?: number;
   }>;
   salesPrice?: number;
@@ -590,6 +591,16 @@ export default function LeadsPage() {
                                 .join(', ')}
                               {lead.products.length > 2 && '...'}
                             </p>
+                            {lead.products.some(p => p.pitchedProductPrice) && (
+                              <p className="text-xs text-blue-600">
+                              Pitched: ${lead.products.reduce((sum, p) => sum + (p.pitchedProductPrice || 0), 0).toLocaleString()}
+                            </p>
+                            )}
+                            {lead.products.some(p => p.productAmount) && (
+                              <p className="text-xs text-green-600">
+                                Price: ${lead.products.reduce((sum, p) => sum + (p.productAmount || 0), 0).toLocaleString()}
+                              </p>
+                            )}
                           </div>
                         ) : (
                           <span className="text-gray-400">No products</span>

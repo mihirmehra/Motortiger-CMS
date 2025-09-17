@@ -22,6 +22,7 @@ interface VendorOrder {
   trackingId?: string;
   productType?: string;
   productName?: string;
+  pitchedProductPrice?: number;
   productAmount?: number;
   shippingAddress?: string;
   quantity?: number;
@@ -291,13 +292,26 @@ export default function EditVendorOrderPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="productAmount">Product Amount</Label>
+                  <Label htmlFor="productAmount">Product Price</Label>
                   <Input
                     id="productAmount"
                     name="productAmount"
                     type="number"
                     step="0.01"
                     value={formData.productAmount || ''}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pitchedProductPrice">Pitched Product Price</Label>
+                  <Input
+                    id="pitchedProductPrice"
+                    name="pitchedProductPrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.pitchedProductPrice || ''}
                     onChange={handleChange}
                     className="mt-1"
                   />

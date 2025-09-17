@@ -117,7 +117,34 @@ export async function GET(request: NextRequest) {
 
     // Agent Performance (All Status)
     const agentPerformance = await Lead.aggregate([
-      { $match: baseFilter },
+      {
+        $match: {
+          ...baseFilter,
+          status: {
+            $in: [
+              'New',
+              'Connected',
+              'Nurturing',
+              'Waiting for respond',
+              'Customer Waiting for respond',
+              'Follow up',
+              'Desision Follow up',
+              'Payment Follow up',
+              'Payment Under Process',
+              'Customer making payment',
+              'Wrong Number',
+              'Taking Information Only',
+              'Not Intrested',
+              'Out Of Scope',
+              'Trust Issues',
+              'Voice mail',
+              'Incomplete Information',
+              'Sourcing',
+              'Sale Payment Done',
+            ]
+          }
+        }
+      },
       {
         $lookup: {
           from: 'users',
@@ -176,8 +203,16 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-          totalRevenue: { $sum: { $ifNull: ['$salesPrice', 0] } },
-          totalProductAmount: {
+          totalPitchedProductPrice: {
+            $sum: {
+              $reduce: {
+                input: '$products',
+                initialValue: 0,
+                in: { $add: ['$$value', { $ifNull: ['$$this.pitchedProductPrice', 0] }] }
+              }
+            }
+          },
+          totalProductPrice: {
             $sum: {
               $reduce: {
                 input: '$products',
@@ -186,7 +221,26 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-          tentativeMargin: { $sum: { $ifNull: ['$tentativeMargin', 0] } }
+          tentativeMargin: {
+            $sum: {
+              $subtract: [
+                {
+                  $reduce: {
+                    input: '$products',
+                    initialValue: 0,
+                    in: { $add: ['$$value', { $ifNull: ['$$this.pitchedProductPrice', 0] }] }
+                  }
+                },
+                {
+                  $reduce: {
+                    input: '$products',
+                    initialValue: 0,
+                    in: { $add: ['$$value', { $ifNull: ['$$this.productAmount', 0] }] }
+                  }
+                }
+              ]
+            }
+          }
         }
       },
       { $sort: { totalLeads: -1 } }
@@ -301,7 +355,7 @@ export async function GET(request: NextRequest) {
       { 
         $match: { 
           ...baseFilter,
-          modeOfPayment: { $exists: true, $nin: [null, ''] }
+          modeOfPayment: { $exists: true, $ne: [null, ''] }
         }
       },
       {

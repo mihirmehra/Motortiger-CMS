@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
       productType: product.productType || 'engine',
       productName: product.productName || '',
       productAmount: product.productAmount || undefined,
+      pitchedProductPrice: product.pitchedProductPrice || undefined,
       quantity: product.quantity || 1,
       yearOfMfg: product.yearOfMfg || undefined,
       make: product.make || undefined,

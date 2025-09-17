@@ -23,6 +23,7 @@ interface Product {
   productType: 'engine' | 'transmission' | 'part';
   productName: string;
   productAmount: string;
+  pitchedProductPrice: string;
   quantity: string;
   yearOfMfg: string;
   make: string;
@@ -111,6 +112,7 @@ export default function NewLeadPage() {
     productType: 'engine',
     productName: '',
     productAmount: '',
+    pitchedProductPrice: '',
     quantity: '1',
     yearOfMfg: '',
     make: '',
@@ -205,6 +207,7 @@ export default function NewLeadPage() {
       productType: 'engine',
       productName: '',
       productAmount: '',
+      pitchedProductPrice: '',
       quantity: '1',
       yearOfMfg: '',
       make: '',
@@ -273,6 +276,7 @@ export default function NewLeadPage() {
         productType: product.productType,
         productName: product.productName,
         productAmount: product.productAmount ? parseFloat(product.productAmount) : undefined,
+        pitchedProductPrice: product.pitchedProductPrice ? parseFloat(product.pitchedProductPrice) : undefined,
         quantity: product.quantity ? parseInt(product.quantity) : 1,
         yearOfMfg: product.yearOfMfg || undefined,
         make: product.make || undefined,
@@ -827,12 +831,23 @@ export default function NewLeadPage() {
                       </div>
 
                       <div>
-                        <Label>Product Amount</Label>
+                        <Label>Product Price</Label>
                         <Input
                           type="number"
                           step="0.01"
                           value={product.productAmount}
                           onChange={(e) => updateProduct(index, 'productAmount', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Pitched Product Price</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={product.pitchedProductPrice}
+                          onChange={(e) => updateProduct(index, 'pitchedProductPrice', e.target.value)}
                           className="mt-1"
                         />
                       </div>

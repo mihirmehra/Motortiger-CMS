@@ -113,7 +113,10 @@ export class ImportService {
       alternateNumber: data['Alternate Number'] || data.alternateNumber || '',
       productName: data['Product Name'] || data.productName || '',
       productAmount: this.parseNumber(
-        data['Product Amount'] || data.productAmount
+        data['Product Price'] || data.productAmount
+      ),
+      pitchedProductPrice: this.parseNumber(
+        data['Pitched Product Price'] || data.pitchedProductPrice
       ),
       quantity: this.parseNumber(data['Quantity'] || data.quantity),
       status: data['Status'] || data.status || 'New',

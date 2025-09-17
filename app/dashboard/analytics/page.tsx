@@ -47,8 +47,8 @@ interface AnalyticsData {
     engines: number;
     transmissions: number;
     parts: number;
-    totalRevenue: number;
-    totalProductAmount: number;
+    totalPitchedProductPrice: number;
+    totalProductPrice: number;
     tentativeMargin: number;
   }>;
   agentPerformanceProductPurchased: Array<{
@@ -461,7 +461,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="text-2xl font-bold">${analyticsData.summary.totalRevenue.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">${analyticsData.summary.totalRevenue}</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-green-600" />
                 </div>
@@ -473,7 +473,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Lead Value</p>
-                    <p className="text-2xl font-bold">${analyticsData.summary.averageLeadValue.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">${analyticsData.summary.averageLeadValue}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-purple-600" />
                 </div>
@@ -571,8 +571,8 @@ export default function AnalyticsPage() {
                       'Engines': agent.engines,
                       'Transmissions': agent.transmissions,
                       'Parts': agent.parts,
-                      'Total Sales Price': agent.totalRevenue,
-                      'Total Product Amount': agent.totalProductAmount,
+                      'Total Pitched Product Price': agent.totalPitchedProductPrice,
+                      'Total Product Amount': agent.totalProductPrice,
                       'Tentative Margin': agent.tentativeMargin
                     }));
                     downloadTableAsExcel(tableData, 'agent_performance_all_status');
@@ -596,7 +596,7 @@ export default function AnalyticsPage() {
                       <th className="text-left p-2">Engines</th>
                       <th className="text-left p-2">Transmissions</th>
                       <th className="text-left p-2">Parts</th>
-                      <th className="text-left p-2">Total Sales Price</th>
+                      <th className="text-left p-2">Total Pitched Price</th>
                       <th className="text-left p-2">Total Product Amount</th>
                       <th className="text-left p-2">Tentative Margin</th>
                       <th className="text-left p-2">Actions</th>
@@ -612,11 +612,11 @@ export default function AnalyticsPage() {
                         <td className="p-2">{agent.engines}</td>
                         <td className="p-2">{agent.transmissions}</td>
                         <td className="p-2">{agent.parts}</td>
-                        <td className="p-2 font-semibold">${agent.totalRevenue.toLocaleString()}</td>
-                        <td className="p-2">${agent.totalProductAmount.toLocaleString()}</td>
+                        <td className="p-2 font-semibold">${agent.totalPitchedProductPrice}</td>
+                        <td className="p-2">${agent.totalProductPrice}</td>
                         <td className="p-2">
                           <Badge className={agent.tentativeMargin >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                            ${agent.tentativeMargin.toLocaleString()}
+                            ${agent.tentativeMargin}
                           </Badge>
                         </td>
                         <td className="p-2">
@@ -635,8 +635,8 @@ export default function AnalyticsPage() {
                     {/* Totals Row */}
                     {(() => {
                       const totals = calculateColumnTotals(analyticsData.agentPerformance, [
-                        'totalLeads', 'followups', 'salePaymentDone', 'engines', 'transmissions', 'parts', 
-                        'totalRevenue', 'totalProductAmount', 'tentativeMargin'
+                        'totalLeads', 'followups', 'salePaymentDone', 'engines', 'transmissions', 'parts',
+                        'totalPitchedProductPrice', 'totalProductPrice', 'tentativeMargin'
                       ]);
                       return (
                         <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
@@ -647,11 +647,11 @@ export default function AnalyticsPage() {
                           <td className="p-2">{totals.engines}</td>
                           <td className="p-2">{totals.transmissions}</td>
                           <td className="p-2">{totals.parts}</td>
-                          <td className="p-2">${totals.totalRevenue.toLocaleString()}</td>
-                          <td className="p-2">${totals.totalProductAmount.toLocaleString()}</td>
+                          <td className="p-2">${totals.totalPitchedProductPrice}</td>
+                          <td className="p-2">${totals.totalProductPrice}</td>
                           <td className="p-2">
                             <Badge className={totals.tentativeMargin >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                              ${totals.tentativeMargin.toLocaleString()}
+                              ${totals.tentativeMargin}
                             </Badge>
                           </td>
                           <td className="p-2">-</td>
@@ -707,7 +707,7 @@ export default function AnalyticsPage() {
                       <th className="text-left p-2">Parts</th>
                       <th className="text-left p-2">Total Sales Price</th>
                       <th className="text-left p-2">Total Cost Price</th>
-                      <th className="text-left p-2">Total Margin</th>
+                      <th className="text-left p-2">Total Margin Tentative</th>
                       <th className="text-left p-2">Actions</th>
                     </tr>
                   </thead>
@@ -720,11 +720,11 @@ export default function AnalyticsPage() {
                         <td className="p-2">{agent.engines}</td>
                         <td className="p-2">{agent.transmissions}</td>
                         <td className="p-2">{agent.parts}</td>
-                        <td className="p-2 font-semibold">${agent.totalSalesPrice.toLocaleString()}</td>
-                        <td className="p-2">${agent.totalCostPrice.toLocaleString()}</td>
+                        <td className="p-2 font-semibold">${agent.totalSalesPrice}</td>
+                        <td className="p-2">${agent.totalCostPrice}</td>
                         <td className="p-2">
                           <Badge className={agent.totalMarginTentative >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                            ${agent.totalMarginTentative.toLocaleString()}
+                            ${agent.totalMarginTentative}
                           </Badge>
                         </td>
                         <td className="p-2">
@@ -754,11 +754,11 @@ export default function AnalyticsPage() {
                           <td className="p-2">{totals.engines}</td>
                           <td className="p-2">{totals.transmissions}</td>
                           <td className="p-2">{totals.parts}</td>
-                          <td className="p-2">${totals.totalSalesPrice.toLocaleString()}</td>
-                          <td className="p-2">${totals.totalCostPrice.toLocaleString()}</td>
+                          <td className="p-2">${totals.totalSalesPrice}</td>
+                          <td className="p-2">${totals.totalCostPrice}</td>
                           <td className="p-2">
                             <Badge className={totals.totalMarginTentative >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                              ${totals.totalMarginTentative.toLocaleString()}
+                              ${totals.totalMarginTentative}
                             </Badge>
                           </td>
                           <td className="p-2">-</td>
@@ -819,19 +819,19 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="text-center p-4 bg-indigo-50 rounded-lg">
                   <div className="text-2xl font-bold text-indigo-600">
-                    ${analyticsData.teamPerformance.totalSalesPrice.toLocaleString()}
+                    ${analyticsData.teamPerformance.totalSalesPrice}
                   </div>
                   <div className="text-sm text-indigo-600">Total Sales Price</div>
                 </div>
                 <div className="text-center p-4 bg-pink-50 rounded-lg">
                   <div className="text-2xl font-bold text-pink-600">
-                    ${analyticsData.teamPerformance.totalCostPrice.toLocaleString()}
+                    ${analyticsData.teamPerformance.totalCostPrice}
                   </div>
                   <div className="text-sm text-pink-600">Total Cost Price</div>
                 </div>
                 <div className="text-center p-4 bg-emerald-50 rounded-lg">
                   <div className="text-2xl font-bold text-emerald-600">
-                    ${analyticsData.teamPerformance.totalMarginTentative.toLocaleString()}
+                    ${analyticsData.teamPerformance.totalMarginTentative}
                   </div>
                   <div className="text-sm text-emerald-600">Total Margin Tentative</div>
                 </div>
@@ -967,25 +967,25 @@ export default function AnalyticsPage() {
 
     return `Daily Sales & Margin Update
 
-Target (${currentMonth}): $${report.monthlyTarget.toLocaleString()}
-Target /Day: $${report.dailyTarget.toLocaleString()}
-Target as on ${todayFormatted}: $${report.targetAsOfToday.toLocaleString()}
+Target (${currentMonth}): $${report.monthlyTarget}
+Target /Day: $${report.dailyTarget}
+Target as on ${todayFormatted}: $${report.targetAsOfToday}
 
-Margin Achieved Till Date: $${report.marginAchievedTillDate.toLocaleString()}
-Deficit Till Date: $${deficitTillDate.toLocaleString()}
+Margin Achieved Till Date: $${report.marginAchievedTillDate}
+Deficit Till Date: $${deficitTillDate}
  
 Day ${todayFormatted}
 
 Calls: ${report.todayCalls} | Engines: ${report.todayEngines} | Parts: ${report.todayParts}
 
-Target Day: $${targetDay.toLocaleString()} 
-Achieved: $${report.todayAchieved.toLocaleString()}
-Balance: $${balanceAfterToday.toLocaleString()}
+Target Day: $${targetDay} 
+Achieved: $${report.todayAchieved}
+Balance: $${balanceAfterToday}
 
 Tentative Sales (Follow-ups): ${report.tentativeFollowups}
-Total Sales: $${report.tentativeSales.toLocaleString()} | 
-Tentative Margin: $${report.tentativeMargin.toLocaleString()}
-Deficit After Tentative Margin: $${deficitAfterTentative.toLocaleString()} (↓${reductionPercentage}%)`;
+Total Sales: $${report.tentativeSales} | 
+Tentative Margin: $${report.tentativeMargin}
+Deficit After Tentative Margin: $${deficitAfterTentative} (↓${reductionPercentage}%)`;
   }
   async function handleDownloadUserReport(agentName: string) {
     try {

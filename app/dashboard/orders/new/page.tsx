@@ -14,9 +14,11 @@ interface Lead {
   customerEmail: string;
   phoneNumber: string;
   productName?: string;
+  pitchedProductPrice?: number;
   productAmount?: number;
   products?: Array<{
     productName: string;
+    pitchedProductPrice: number;
     productAmount: number;
     quantity: number;
   }>;
@@ -41,6 +43,7 @@ export default function NewVendorOrderPage() {
     courierCompany: '',
     trackingId: '',
     productName: '',
+    pitchedProductPrice: '',
     productAmount: '',
     shippingAddress: '',
     quantity: '',
@@ -101,6 +104,7 @@ export default function NewVendorOrderPage() {
         customerId: lead._id,
         customerName: lead.customerName,
         productName: lead.products?.[0]?.productName || '',
+        pitchedProductPrice: lead.products?.[0]?.pitchedProductPrice?.toString() || '',
         productAmount: lead.products?.[0]?.productAmount?.toString() || '',
         quantity: lead.products?.[0]?.quantity?.toString() || '',
       }));
@@ -342,6 +346,19 @@ export default function NewVendorOrderPage() {
                     type="number"
                     step="0.01"
                     value={formData.productAmount}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pitchedProductPrice">Pitched Product Price</Label>
+                  <Input
+                    id="pitchedProductPrice"
+                    name="pitchedProductPrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.pitchedProductPrice}
                     onChange={handleChange}
                     className="mt-1"
                   />
