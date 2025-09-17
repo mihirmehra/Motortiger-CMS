@@ -223,22 +223,53 @@ export async function GET(request: NextRequest) {
           },
           tentativeMargin: {
             $sum: {
-              $subtract: [
-                {
-                  $reduce: {
-                    input: '$products',
-                    initialValue: 0,
-                    in: { $add: ['$$value', { $ifNull: ['$$this.pitchedProductPrice', 0] }] }
-                  }
+              $cond: {
+                if: {
+                  $or: [
+                    {
+                      $eq: [
+                        {
+                          $reduce: {
+                            input: '$products',
+                            initialValue: 0,
+                            in: { $add: ['$$value', { $ifNull: ['$$this.pitchedProductPrice', 0] }] }
+                          }
+                        }, 0
+                      ]
+                    },
+                    {
+                      $eq: [
+                        {
+                          $reduce: {
+                            input: '$products',
+                            initialValue: 0,
+                            in: { $add: ['$$value', { $ifNull: ['$$this.productAmount', 0] }] }
+                          }
+                        }, 0
+                      ]
+                    }
+                  ]
                 },
-                {
-                  $reduce: {
-                    input: '$products',
-                    initialValue: 0,
-                    in: { $add: ['$$value', { $ifNull: ['$$this.productAmount', 0] }] }
-                  }
+                then: 0,
+                else: {
+                  $subtract: [
+                    {
+                      $reduce: {
+                        input: '$products',
+                        initialValue: 0,
+                        in: { $add: ['$$value', { $ifNull: ['$$this.pitchedProductPrice', 0] }] }
+                      }
+                    },
+                    {
+                      $reduce: {
+                        input: '$products',
+                        initialValue: 0,
+                        in: { $add: ['$$value', { $ifNull: ['$$this.productAmount', 0] }] }
+                      }
+                    }
+                  ]
                 }
-              ]
+              }
             }
           }
         }
