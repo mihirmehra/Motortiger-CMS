@@ -73,9 +73,7 @@ export const leadSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
   customerEmail: z
     .string()
-    .email('Invalid email format')
-    .optional()
-    .or(z.literal('')),
+    .optional(),
   alternateNumber: z.string().optional(),
   status: z.string().optional(),
   assignedAgent: z.string().optional(),
