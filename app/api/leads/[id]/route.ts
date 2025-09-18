@@ -114,44 +114,6 @@ export async function PUT(
     const body = await request.json();
     const oldValues = lead.toObject();
 
-    // Handle follow-up scheduling if status changed to follow-up and date/time provided
-    const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
-    const isChangingToFollowup = followupStatuses.includes(body.status) && body.status !== oldValues.status;
-    
-    if (isChangingToFollowup && body.followupDate && body.followupTime) {
-      const followupData = {
-        followupId: generateFollowupId(),
-        leadId: lead._id,
-        leadNumber: lead.leadNumber,
-        customerName: lead.customerName,
-        customerEmail: lead.customerEmail,
-        phoneNumber: lead.phoneNumber,
-        productName: lead.products?.[0]?.productName,
-        salesPrice: lead.salesPrice,
-        status: body.status,
-        assignedAgent: lead.assignedAgent,
-        scheduledDate: new Date(`${body.followupDate}T${body.followupTime}`),
-        scheduledTime: body.followupTime,
-        notes: [`Follow-up scheduled for ${new Date(`${body.followupDate}T${body.followupTime}`).toLocaleString()}`],
-        createdBy: user.id,
-        updatedBy: user.id
-      };
-
-      const followup = new Followup(followupData);
-      await followup.save();
-
-      // Add to lead's scheduled followups
-      lead.scheduledFollowups.push({
-        followupType: body.status,
-        scheduledDate: new Date(`${body.followupDate}T${body.followupTime}`),
-        scheduledTime: body.followupTime,
-        notes: `Follow-up scheduled during lead update`,
-        isCompleted: false,
-        createdBy: user.id,
-        createdAt: new Date()
-      });
-    }
-
     // Handle payment record creation/update if payment information is provided
     if (body.salesPrice && body.salesPrice > 0) {
       const PaymentRecord = (await import('@/models/PaymentRecord')).default;
@@ -348,8 +310,8 @@ export async function PUT(
 
     // Handle status change to "Sale Payment Done"
     if (
-      body.status === 'Sale Payment Done' &&
-      lead.status !== 'Sale Payment Done'
+      body.status === 'Product Purchased' &&
+      lead.status !== 'Product Purchased'
     ) {
       // Create sale record
       const sale = new Sale({
