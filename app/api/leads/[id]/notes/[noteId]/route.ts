@@ -29,13 +29,6 @@ export async function PUT(
     const body = await request.json();
     const validation = validateData(noteSchema, body);
 
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validation.errors },
-        { status: 400 }
-      );
-    }
-
     await connectDB();
 
     const lead = await Lead.findById(params.id);
