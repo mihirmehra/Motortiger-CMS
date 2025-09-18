@@ -74,7 +74,8 @@ export const leadSchema = z.object({
   customerEmail: z
     .string()
     .email('Invalid email format')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
   alternateNumber: z.string().optional(),
   status: z.string().optional(),
   assignedAgent: z.string().optional(),
