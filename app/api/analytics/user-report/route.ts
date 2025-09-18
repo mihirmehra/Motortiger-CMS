@@ -30,12 +30,26 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const startDate =
-      searchParams.get('startDate') ||
-      new Date(new Date().getFullYear(), 0, 1).toISOString();
-    const endDate = searchParams.get('endDate') || new Date().toISOString();
+    
+    // Get raw parameters
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
     const agentName = searchParams.get('agentName');
     const format = searchParams.get('format') || 'excel';
+
+    // Set default dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
+    const defaultStartDate = new Date(today.getFullYear(), 0, 1);
+    const defaultEndDate = new Date(); // Current date and time
+
+    // Use a more robust check for empty string
+    const startDate = startDateParam ? new Date(startDateParam) : defaultStartDate;
+    const endDate = endDateParam ? new Date(endDateParam) : defaultEndDate;
+
+    // To ensure the full end day is included, set the end time to the end of the day
+    endDate.setHours(23, 59, 59, 999);
 
     if (!agentName) {
       return NextResponse.json(
@@ -52,8 +66,8 @@ export async function GET(request: NextRequest) {
 
     const dateFilter = {
       createdAt: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
+        $gte: startDate,
+        $lte: endDate,
       },
       assignedAgent: targetUser._id,
     };
@@ -70,7 +84,7 @@ export async function GET(request: NextRequest) {
       .populate('assignedAgent', 'name email')
       .lean();
 
-    // Calculate user statistics
+    // ... (rest of your code for calculating stats and exporting)
     const totalLeads = leads.length;
     const convertedLeads = leads.filter((lead) =>
       ['Sale Payment Done', 'Sale Closed'].includes(lead.status)
@@ -86,21 +100,16 @@ export async function GET(request: NextRequest) {
     const conversionRate =
       totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
-    // Status breakdown
     const statusBreakdown = leads.reduce((acc: any, lead) => {
       acc[lead.status] = (acc[lead.status] || 0) + 1;
       return acc;
     }, {});
 
-    // Format data for export
     const reportData = [
-      // Summary Section
       { Metric: 'Agent Name', Value: agentName },
       {
         Metric: 'Report Period',
-        Value: `${new Date(startDate).toLocaleDateString()} - ${new Date(
-          endDate
-        ).toLocaleDateString()}`,
+        Value: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
       },
       { Metric: 'Total Leads', Value: totalLeads },
       { Metric: 'Converted Leads', Value: convertedLeads },
@@ -178,7 +187,6 @@ export async function GET(request: NextRequest) {
       fileExtension = 'csv';
     }
 
-    // Log activity
     await logActivity({
       userId: user.id,
       userName: user.email,
