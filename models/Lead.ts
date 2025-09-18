@@ -272,7 +272,7 @@ const LeadSchema = new Schema(
         'Sale Payment Done',
         'Product Purchased',
       ],
-      default: 'New',
+      default: 'Follow up',
     },
     orderStatus: String,
     assignedAgent: { type: Schema.Types.ObjectId, ref: 'User', required: true },

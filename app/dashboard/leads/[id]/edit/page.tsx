@@ -100,7 +100,7 @@ export default function EditLeadPage() {
     phoneNumber: '',
     alternateNumber: '',
     assignedAgent: '',
-    status: 'New',
+    status: 'Follow up',
     sameShippingInfo: false,
   });
   const [followupDateTime, setFollowupDateTime] = useState({

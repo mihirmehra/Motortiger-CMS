@@ -62,7 +62,7 @@ export default function NewLeadPage() {
     phoneNumber: '',
     alternateNumber: '',
     assignedAgent: '',
-    status: 'New',
+    status: 'Follow up',
     sameShippingInfo: false,
   });
 
@@ -146,7 +146,6 @@ export default function NewLeadPage() {
     'Follow up',
     'Desision Follow up',
     'Payment Follow up',
-    'Customer Waiting for respond'
   ];
   const isFollowupStatus = followupStatuses.includes(formData.status);
 
