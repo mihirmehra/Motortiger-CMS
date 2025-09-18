@@ -128,8 +128,8 @@ export const followupScheduleSchema = z.object({
     'Desision Follow up',
     'Payment Follow up',
   ]),
-  followupDate: z.string().min(1, 'Follow-up date is required'),
-  followupTime: z.string().min(1, 'Follow-up time is required'),
+  followupDate: z.string().optional(),
+  followupTime: z.string().optional(),
   notes: z.string().optional(),
 });
 

@@ -170,7 +170,7 @@ export default function EditLeadPage() {
     'Product Purchased'
   ];
 
-  const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up', 'Customer Waiting for respond'];
+  const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
   const isFollowupStatus = followupStatuses.includes(formData.status);
 
   useEffect(() => {
@@ -207,18 +207,9 @@ export default function EditLeadPage() {
           phoneNumber: lead.phoneNumber || '',
           alternateNumber: lead.alternateNumber || '',
           assignedAgent: lead.assignedAgent?._id || '',
-          status: lead.status || 'New',
+          status: lead.status || 'Follow up',
           sameShippingInfo: lead.sameShippingInfo || false,
         });
-
-        if (lead.status && followupStatuses.includes(lead.status)) {
-          const followUpDate = lead.followupDate ? new Date(lead.followupDate) : null;
-          const followUpTime = lead.followupTime;
-          setFollowupDateTime({
-            date: followUpDate ? followUpDate.toISOString().split('T')[0] : '',
-            time: followUpTime || ''
-          });
-        }
         
         setBillingInfo(lead.billingInfo || {
           firstName: '',
@@ -419,11 +410,6 @@ export default function EditLeadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isFollowupStatus && (!followupDateTime.date || !followupDateTime.time)) {
-      alert('Please select follow-up date and time for follow-up status');
-      return;
-    }
     
     setLoading(true);
 
