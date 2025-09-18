@@ -32,7 +32,11 @@ export async function GET(request: NextRequest) {
     });
 
     // Get sales stats
-    let totalSales = 0;
+    let totalSales = await Lead.countDocuments({
+      ...dataFilter,
+      status: 'Product Purchased'
+    });
+
     let totalRevenue = 0;
     if (permissions.canRead('sales')) {
       totalSales = await Sale.countDocuments(dataFilter);
