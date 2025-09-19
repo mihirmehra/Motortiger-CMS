@@ -53,7 +53,7 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     customerEmail: String,
     modeOfPayment: { 
       type: String,
-      enum: ['Card', 'Zelle'],
+      enum: ['card', 'Zelle'],
       required: true 
     },
     paymentPortal: { 
