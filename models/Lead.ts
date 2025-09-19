@@ -291,7 +291,7 @@ const LeadSchema = new Schema(
     modeOfPayment: String,
     paymentPortal: { 
       type: String, 
-      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle'],
+      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle', ''],
       default: ''
     },
     cardNumber: String,
