@@ -45,7 +45,7 @@ export default function NewPaymentRecordPage() {
   });
   const router = useRouter();
 
-  const paymentPortalOptions = ['EasyPayDirect', 'Authorize.net'];
+  const paymentPortalOptions = ['EasyPayDirect', 'Authorize.net', 'Zelle'];
   const statusOptions = ['pending', 'completed', 'failed', 'refunded', 'disputed'];
 
   useEffect(() => {

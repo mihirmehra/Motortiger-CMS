@@ -93,7 +93,7 @@ export const leadSchema = z.object({
   // Payment fields
   modeOfPayment: z.string().optional(),
   paymentPortal: z
-    .enum(['EasyPayDirect', 'Authorize.net'])
+    .enum(['EasyPayDirect', 'Authorize.net', 'Zelle'])
     .optional()
     .or(z.literal('')),
   cardNumber: z.string().optional(),
@@ -188,7 +188,7 @@ export const paymentRecordSchema = z.object({
   salesPrice: z.number().positive('Sales price must be positive'),
   paymentDate: z.string().or(z.date()),
   paymentPortal: z
-    .enum(['EasyPayDirect', 'Authorize.net'])
+    .enum(['EasyPayDirect', 'Authorize.net', 'Zelle'])
     .optional()
     .or(z.literal('')),
   cardNumber: z.string().optional(),
