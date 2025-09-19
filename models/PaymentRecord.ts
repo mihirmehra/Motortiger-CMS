@@ -58,7 +58,7 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     },
     paymentPortal: { 
       type: String, 
-      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle', ''],
+      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle'],
       default: ''
     },
     cardNumber: String,
