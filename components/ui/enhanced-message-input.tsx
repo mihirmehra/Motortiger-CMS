@@ -1,4 +1,4 @@
-<Share className="h-3 w-3" />'use client';
+'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
