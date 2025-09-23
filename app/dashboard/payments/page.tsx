@@ -30,12 +30,19 @@ interface PaymentRecord {
   _id: string;
   paymentId: string;
   customerName: string;
+  customerPhone?: string;
+  alternateNumber?: string;
+  customerEmail?: string;
   modeOfPayment: string;
+  paymentPortal?: string;
   paymentDate: string;
   salesPrice: number;
   paymentStatus: string;
   totalMargin?: number;
+  pendingBalance?: number;
   refunded?: number;
+  refundCredited?: number;
+  chargebackAmount?: number;
   createdAt: string;
 }
 
@@ -242,10 +249,13 @@ export default function PaymentRecordsPage() {
                   <TableRow>
                     <TableHead>Payment ID</TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>Contact</TableHead>
                     <TableHead>Payment Mode</TableHead>
+                    <TableHead>Portal</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Margin</TableHead>
+                    <TableHead>Pending</TableHead>
                     <TableHead>Refunded</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Actions</TableHead>
@@ -255,8 +265,26 @@ export default function PaymentRecordsPage() {
                   {payments.map((payment) => (
                     <TableRow key={payment._id}>
                       <TableCell className="font-medium">{payment.paymentId}</TableCell>
-                      <TableCell>{payment.customerName}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{payment.customerName}</p>
+                          {payment.customerEmail && (
+                            <p className="text-sm text-gray-500">{payment.customerEmail}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          {payment.customerPhone && (
+                            <p className="text-sm">{payment.customerPhone}</p>
+                          )}
+                          {payment.alternateNumber && (
+                            <p className="text-xs text-gray-500">{payment.alternateNumber}</p>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{payment.modeOfPayment}</TableCell>
+                      <TableCell>{payment.paymentPortal || 'N/A'}</TableCell>
                       <TableCell>${payment.salesPrice.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(payment.paymentStatus)}>
@@ -264,10 +292,37 @@ export default function PaymentRecordsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {payment.totalMargin ? `$${payment.totalMargin.toLocaleString()}` : 'N/A'}
+                        {payment.totalMargin ? (
+                          <span className={payment.totalMargin >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            ${payment.totalMargin.toLocaleString()}
+                          </span>
+                        ) : 'N/A'}
                       </TableCell>
                       <TableCell>
-                        {payment.refunded ? `$${payment.refunded.toLocaleString()}` : '$0'}
+                        {payment.pendingBalance ? (
+                          <span className="text-orange-600">
+                            ${payment.pendingBalance.toLocaleString()}
+                          </span>
+                        ) : '$0'}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          {payment.refunded ? (
+                            <p className="text-red-600">${payment.refunded.toLocaleString()}</p>
+                          ) : (
+                            <p>$0</p>
+                          )}
+                          {payment.refundCredited && (
+                            <p className="text-xs text-blue-600">
+                              Credited: ${payment.refundCredited.toLocaleString()}
+                            </p>
+                          )}
+                          {payment.chargebackAmount && (
+                            <p className="text-xs text-red-600">
+                              Chargeback: ${payment.chargebackAmount.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {new Date(payment.paymentDate).toLocaleDateString()}

@@ -8,213 +8,221 @@ import {
   LayoutDashboard, 
   FileText, 
   ShoppingCart, 
-  Target, 
-  TrendingUp, 
   CreditCard, 
-  Users, 
+  Target,
+  TrendingUp,
+  Phone,
+  Users,
   Activity,
-  Clock,
+  MessageSquare,
   LogOut,
-  Menu,
-  X,
   Car,
-  BarChart3
+  Clock
 } from 'lucide-react';
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface SidebarProps {
-  user: any;
+  user: User | null;
   onLogout: () => void;
 }
 
 export default function Sidebar({ user, onLogout }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [followupCount, setFollowupCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  // Load unread count on component mount
   useEffect(() => {
     if (user) {
-      loadFollowupCount();
-      // Set up interval to check for follow-ups every minute
-      const interval = setInterval(loadFollowupCount, 60000);
+      loadUnreadCount();
+      // Set up interval to check for new messages
+      const interval = setInterval(loadUnreadCount, 30000); // Check every 30 seconds
       return () => clearInterval(interval);
     }
   }, [user]);
 
-  const loadFollowupCount = async () => {
+  const loadUnreadCount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/followups/pending-count', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch('/api/chats/unread-count', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (response.ok) {
         const data = await response.json();
-        setFollowupCount(data.count);
+        setUnreadCount(data.unreadCount);
       }
     } catch (error) {
-      console.error('Failed to load followup count:', error);
+      console.error('Failed to load unread count:', error);
     }
   };
 
   const menuItems = [
-    { 
-      icon: LayoutDashboard, 
-      label: 'Dashboard', 
-      href: '/dashboard',
+    {
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/dashboard',
       roles: ['admin', 'manager', 'agent']
     },
-    { 
-      icon: FileText, 
-      label: 'Leads', 
-      href: '/dashboard/leads',
+    {
+      label: 'Lead Management',
+      icon: FileText,
+      path: '/dashboard/leads',
       roles: ['admin', 'manager', 'agent']
     },
-    { 
-      icon: ShoppingCart, 
-      label: 'Vendor Orders', 
-      href: '/dashboard/orders',
+    {
+      label: 'Vendor Orders',
+      icon: ShoppingCart,
+      path: '/dashboard/orders',
       roles: ['admin', 'manager', 'agent']
     },
-    { 
-      icon: Clock, 
-      label: 'Follow-ups', 
-      href: '/dashboard/followups',
+    {
+      label: 'Sales Management',
+      icon: TrendingUp,
+      path: '/dashboard/sales',
+      roles: ['admin', 'manager']
+    },
+    {
+      label: 'Payment Records',
+      icon: CreditCard,
+      path: '/dashboard/payments',
+      roles: ['admin', 'manager', 'agent']
+    },
+    {
+      label: 'Target Management',
+      icon: Target,
+      path: '/dashboard/targets',
+      roles: ['admin', 'manager']
+    },
+    {
+      label: 'Follow-ups',
+      icon: Clock,
+      path: '/dashboard/followups',
+      roles: ['admin', 'manager', 'agent']
+    },
+    {
+      label: 'Chat System',
+      icon: MessageSquare,
+      path: '/dashboard/chat',
       roles: ['admin', 'manager', 'agent'],
-      badge: followupCount > 0 ? followupCount : undefined
+      badge: unreadCount > 0 ? unreadCount : undefined
     },
-    { 
-      icon: TrendingUp, 
-      label: 'Sales', 
-      href: '/dashboard/sales',
+    {
+      label: 'User Management',
+      icon: Users,
+      path: '/dashboard/users',
       roles: ['admin', 'manager']
     },
-    { 
-      icon: CreditCard, 
-      label: 'Payment Records', 
-      href: '/dashboard/payments',
-      roles: ['admin', 'manager', 'agent']
-    },
-    { 
-      icon: Target, 
-      label: 'Targets', 
-      href: '/dashboard/targets',
+    {
+      label: 'Analytics & Reports',
+      icon: TrendingUp,
+      path: '/dashboard/analytics',
       roles: ['admin', 'manager']
     },
-    { 
-      icon: Users, 
-      label: 'Users', 
-      href: '/dashboard/users',
-      roles: ['admin', 'manager']
-    },
-    { 
-      icon: Activity, 
-      label: 'Activity History', 
-      href: '/dashboard/activity',
+    {
+      label: 'Activity History',
+      icon: Activity,
+      path: '/dashboard/activity',
       roles: ['admin']
-    },
-    { 
-      icon: BarChart3, 
-      label: 'Analytics', 
-      href: '/dashboard/analytics',
-      roles: ['admin', 'manager']
     }
   ];
 
   const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(user?.role)
+    user && item.roles.includes(user.role)
   );
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') {
+  const isActive = (path: string) => {
+    if (path === '/dashboard') {
       return pathname === '/dashboard';
     }
-    return pathname.startsWith(href);
+    return pathname.startsWith(path);
   };
 
   return (
-    <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    } flex flex-col h-screen`}>
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Car className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-gray-900">Motortiger CMS</h2>
-                <p className="text-xs text-gray-500">Auto Parts Management</p>
-              </div>
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2"
-          >
-            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </Button>
+    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
+      {/* Logo */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg">
+            <Car className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Motortiger</h1>
+            <p className="text-sm text-gray-500">CMS</p>
+          </div>
         </div>
       </div>
 
       {/* User Info */}
-      {!isCollapsed && (
+      {user && (
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
               <span className="text-sm font-medium text-blue-600">
-                {user?.name?.charAt(0).toUpperCase()}
+                {user.name.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-              <p className="text-xs text-blue-600 font-medium capitalize">{user?.role}</p>
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user.name}
+              </p>
+              <p className="text-xs text-gray-500 capitalize">{user.role}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {filteredMenuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
-                <Button
-                  variant={isActive(item.href) ? "default" : "ghost"}
-                  className={`w-full justify-start ${
-                    isCollapsed ? 'px-2' : 'px-3'
-                  } ${isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                  onClick={() => router.push(item.href)}
-                >
-                  <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
-                  {!isCollapsed && item.label}
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {filteredMenuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Button
+              key={item.path}
+              variant={isActive(item.path) ? 'default' : 'ghost'}
+              className={`w-full justify-start gap-3 ${
+                isActive(item.path) 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => router.push(item.path)}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge && (
+                <Badge className="bg-red-500 text-white text-xs">
+                  {item.badge}
+                </Badge>
+              )}
+            </Button>
+          );
+        })}
       </nav>
 
       {/* Logout */}
       <div className="p-4 border-t border-gray-200">
         <Button
           variant="ghost"
+          className="w-full justify-start gap-3 text-red-600 hover:bg-red-50 hover:text-red-700"
           onClick={onLogout}
-          className={`w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 ${
-            isCollapsed ? 'px-2' : 'px-3'
-          }`}
         >
-          <LogOut className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
-          {!isCollapsed && 'Logout'}
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+        
+        <Button
+          variant={pathname === '/dashboard/phone' ? 'secondary' : 'ghost'}
+          className="w-full justify-start"
+          onClick={() => router.push('/dashboard/phone')}
+        >
+          <Phone className="h-5 w-5" />
+          Phone System
         </Button>
       </div>
     </div>

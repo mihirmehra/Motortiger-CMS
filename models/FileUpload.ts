@@ -24,7 +24,7 @@ const FileUploadSchema = new Schema<IFileUpload>(
     uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     module: {
       type: String,
-      enum: ['leads', 'vendor_orders', 'sales', 'payment_records', 'users'],
+      enum: ['leads', 'vendor_orders', 'sales', 'payment_records', 'users', 'chats'],
       required: true,
     },
     targetId: String,

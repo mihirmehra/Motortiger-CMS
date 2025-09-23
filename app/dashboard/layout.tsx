@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/ui/sidebar';
 import { toast } from 'sonner';
 import { useFollowupNotifications } from '@/hooks/use-followup-notifications';
+import ChatNotification from '@/components/ui/chat-notification';
+import FollowupNotification from '@/components/ui/followup-notification';
 
 interface User {
   id: string;
@@ -58,6 +60,8 @@ export default function DashboardLayout({
       <div className="ml-64 min-w-0">
         {children}
       </div>
+      {user && <ChatNotification userId={user.id} />}
+      {user && <FollowupNotification userId={user.id} />}
     </div>
   );
 }

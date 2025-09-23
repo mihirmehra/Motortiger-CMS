@@ -17,6 +17,7 @@ export interface IVendorOrder {
   customerId?: string;
   customerName?: string;
   customerPhone?: string;
+  alternateNumber?: string;
   customerEmail?: string;
   orderStatus: OrderStatus;
   itemSubtotal?: number;
@@ -28,6 +29,7 @@ export interface IVendorOrder {
   productType?: 'engine' | 'transmission' | 'part';
   productName?: string;
   productAmount?: number;
+  pitchedProductPrice?: number;
   shippingAddress?: string;
   quantity?: number;
   yearOfMfg?: string;
@@ -35,23 +37,19 @@ export interface IVendorOrder {
   model?: string;
   trim?: string;
   engineSize?: string;
-  // Part-specific fields
   partType?: 'used' | 'new';
   partNumber?: string;
   vin?: string;
-  // Vendor payment fields
   vendorPaymentMode?: string;
   vendorPaymentAmount?: number;
   vendorPaymentDate?: Date;
   vendorPaymentStatus?: 'pending' | 'completed' | 'failed';
-  // Shipping and delivery
   modeOfPayment?: string;
   dateOfBooking?: Date;
   dateOfDelivery?: Date;
   trackingNumber?: string;
   shippingCompany?: string;
   proofOfDelivery?: string;
-  // Additional vendor details
   vendorContactPerson?: string;
   vendorPhone?: string;
   vendorEmail?: string;
@@ -72,6 +70,7 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     customerId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerName: String,
     customerPhone: String,
+    alternateNumber: String,
     customerEmail: String,
     orderStatus: {
       type: String,
@@ -94,6 +93,7 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     productType: { type: String, enum: ['engine', 'transmission', 'part'] },
     productName: String,
     productAmount: Number,
+    pitchedProductPrice: Number,
     shippingAddress: String,
     quantity: Number,
     yearOfMfg: String,
@@ -101,11 +101,9 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     model: String,
     trim: String,
     engineSize: String,
-    // Part-specific fields
     partType: { type: String, enum: ['used', 'new'] },
     partNumber: String,
     vin: String,
-    // Vendor payment fields
     vendorPaymentMode: String,
     vendorPaymentAmount: Number,
     vendorPaymentDate: Date,
@@ -114,14 +112,12 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
       enum: ['pending', 'completed', 'failed'],
       default: 'pending'
     },
-    // Shipping and delivery
     modeOfPayment: String,
     dateOfBooking: Date,
     dateOfDelivery: Date,
     trackingNumber: String,
     shippingCompany: String,
     proofOfDelivery: String,
-    // Additional vendor details
     vendorContactPerson: String,
     vendorPhone: String,
     vendorEmail: String,
@@ -148,8 +144,7 @@ VendorOrderSchema.pre('save', function (next) {
 VendorOrderSchema.index({ orderNo: 1 });
 VendorOrderSchema.index({ vendorId: 1 });
 VendorOrderSchema.index({ orderStatus: 1 });
-VendorOrderSchema.index({ leadId: 1 });
-VendorOrderSchema.index({ productId: 1 });
+VendorOrderSchema.index({ customerId: 1 });
 VendorOrderSchema.index({ createdBy: 1 });
 
 export default mongoose.models.VendorOrder ||

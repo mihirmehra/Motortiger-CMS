@@ -57,7 +57,7 @@ export const COUNTRIES = [
   { value: 'MX', label: 'Mexico' },
 ];
 
-export const YEARS = Array.from({ length: 200 }, (_, i) => {
+export const YEARS = Array.from({ length: 50 }, (_, i) => {
   const year = new Date().getFullYear() - i;
   return { value: year.toString(), label: year.toString() };
 });

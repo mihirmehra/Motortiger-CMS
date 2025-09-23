@@ -17,15 +17,15 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    // Get current time and 1 hour from now
+    // Get current time and 10 minutes from now
     const now = new Date();
-    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+    const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
 
     let filter: any = { 
       isDone: false,
       scheduledDate: {
-        $gte: now,
-        $lte: oneHourFromNow
+        $gte: new Date(now.getTime() - 60000), // Include 1 minute buffer
+        $lte: tenMinutesFromNow
       }
     };
 

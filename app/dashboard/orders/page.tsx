@@ -32,8 +32,14 @@ interface VendorOrder {
   shopName: string;
   vendorAddress: string;
   customerName?: string;
+  customerPhone?: string;
+  alternateNumber?: string;
+  customerEmail?: string;
   orderStatus: string;
   grandTotal?: number;
+  productName?: string;
+  productAmount?: number;
+  pitchedProductPrice?: number;
   createdAt: string;
 }
 
@@ -246,6 +252,8 @@ export default function VendorOrdersPage() {
                     <TableHead>Vendor</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Product</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Created</TableHead>
@@ -258,7 +266,41 @@ export default function VendorOrdersPage() {
                       <TableCell className="font-medium">{order.orderNo}</TableCell>
                       <TableCell>{order.shopName}</TableCell>
                       <TableCell>{order.vendorAddress}</TableCell>
-                      <TableCell>{order.customerName || 'N/A'}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{order.customerName || 'N/A'}</p>
+                          {order.customerEmail && (
+                            <p className="text-sm text-gray-500">{order.customerEmail}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          {order.customerPhone && (
+                            <p className="text-sm">{order.customerPhone}</p>
+                          )}
+                          {order.alternateNumber && (
+                            <p className="text-xs text-gray-500">{order.alternateNumber}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {order.productName && (
+                            <p className="font-medium">{order.productName}</p>
+                          )}
+                          {order.pitchedProductPrice && (
+                            <p className="text-xs text-blue-600">
+                              Pitched: ${order.pitchedProductPrice.toLocaleString()}
+                            </p>
+                          )}
+                          {order.productAmount && (
+                            <p className="text-xs text-green-600">
+                              Price: ${order.productAmount.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(order.orderStatus)}>
                           {order.orderStatus}

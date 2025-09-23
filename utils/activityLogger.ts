@@ -63,7 +63,10 @@ export function getChangeDescription(action: string, module: string, targetName?
     followups: 'Follow-up',
     payment_records: 'Payment Record',
     users: 'User',
-    auth: 'Authentication'
+    auth: 'Authentication',
+    chats: 'Chat',
+    calls: 'Call',
+    sms: 'SMS'
   };
 
   const actionText = actionMap[action as keyof typeof actionMap] || action;

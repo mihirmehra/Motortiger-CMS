@@ -31,6 +31,7 @@ import ImportModal from '@/components/ui/import-modal';
 import FollowupModal, { FollowupData } from '@/components/ui/followup-modal';
 import EnhancedNotesModal from '@/components/ui/enhanced-notes-modal';
 
+import { toast } from 'sonner';
 interface Lead {
   _id: string;
   leadId: string;

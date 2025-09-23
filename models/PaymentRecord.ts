@@ -6,9 +6,10 @@ export interface IPaymentRecord extends Document {
   customerId?: Types.ObjectId;
   customerName: string;
   customerPhone?: string;
+  alternateNumber?: string;
   customerEmail?: string;
   modeOfPayment: string;
-  paymentPortal?: 'EasyPayDirect' | 'Authorize.net' | 'Zelle' | '';
+  paymentPortal?: 'EasyPayDirect' | 'Authorize.net';
   cardNumber?: string;
   expiry?: string;
   paymentDate: Date;
@@ -17,7 +18,6 @@ export interface IPaymentRecord extends Document {
   costPrice?: number;
   totalMargin?: number;
   refunded?: number;
-  // Enhanced dispute fields
   disputeCategory?: string;
   disputeReason?: string;
   disputeDate?: Date;
@@ -27,14 +27,12 @@ export interface IPaymentRecord extends Document {
   arn?: string;
   refundCredited?: number;
   chargebackAmount?: number;
-  // Vendor payment information
   vendorPaymentMode?: string;
   vendorPaymentAmount?: number;
   vendorPaymentDate?: Date;
   vendorPaymentStatus?: 'pending' | 'completed' | 'failed';
   vendorName?: string;
   vendorAddress?: string;
-  // Additional payment details
   transactionId?: string;
   paymentNotes?: string;
   processingFee?: number;
@@ -50,15 +48,12 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     customerId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerName: { type: String, required: true },
     customerPhone: String,
+    alternateNumber: String,
     customerEmail: String,
-    modeOfPayment: { 
-      type: String,
-      enum: ['card', 'Zelle'],
-      required: true 
-    },
+    modeOfPayment: { type: String, required: true },
     paymentPortal: { 
       type: String, 
-      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle', ''],
+      enum: ['EasyPayDirect', 'Authorize.net', ''],
       default: ''
     },
     cardNumber: String,
@@ -69,7 +64,6 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     costPrice: Number,
     totalMargin: Number,
     refunded: Number,
-    // Enhanced dispute fields
     disputeCategory: String,
     disputeReason: String,
     disputeDate: Date,
@@ -79,7 +73,6 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     arn: String,
     refundCredited: Number,
     chargebackAmount: Number,
-    // Vendor payment information
     vendorPaymentMode: String,
     vendorPaymentAmount: Number,
     vendorPaymentDate: Date,
@@ -90,7 +83,6 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     },
     vendorName: String,
     vendorAddress: String,
-    // Additional payment details
     transactionId: String,
     paymentNotes: String,
     processingFee: Number,

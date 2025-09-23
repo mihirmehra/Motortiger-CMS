@@ -63,3 +63,27 @@ export function generateVendorId(): string {
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
   return `VND${timestamp.slice(-6)}${random}`;
 }
+
+export function generateChatId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `CHAT${timestamp.slice(-6)}${random}`;
+}
+
+export function generateMessageId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `MSG${timestamp.slice(-6)}${random}`;
+}
+
+export function generateCallId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `CALL${timestamp.slice(-6)}${random}`;
+}
+
+export function generateSMSId(): string {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `SMS${timestamp.slice(-6)}${random}`;
+}

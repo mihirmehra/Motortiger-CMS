@@ -92,13 +92,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validation = validateData(targetSchema, body);
 
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validation.errors },
-        { status: 400 }
-      );
-    }
-
     await connectDB();
 
     const targetData = {

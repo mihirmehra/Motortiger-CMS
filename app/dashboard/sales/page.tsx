@@ -30,8 +30,13 @@ interface Sale {
   customerName: string;
   customerEmail: string;
   phoneNumber: string;
+  alternateNumber?: string;
   productName?: string;
   salesPrice?: number;
+  totalMargin?: number;
+  modeOfPayment?: string;
+  paymentPortal?: string;
+  paymentDate?: string;
   status: string;
   orderConfirmationSent: boolean;
   orderStageUpdated: boolean;
@@ -294,8 +299,11 @@ export default function SalesPage() {
                   <TableRow>
                     <TableHead>Sale ID</TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>Contact</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Margin</TableHead>
+                    <TableHead>Payment Info</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Order Confirmation</TableHead>
                     <TableHead>Stage Updated</TableHead>
@@ -313,9 +321,39 @@ export default function SalesPage() {
                           <p className="text-sm text-gray-500">{sale.customerEmail}</p>
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="text-sm">{sale.phoneNumber}</p>
+                          {sale.alternateNumber && (
+                            <p className="text-xs text-gray-500">{sale.alternateNumber}</p>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{sale.productName || 'N/A'}</TableCell>
                       <TableCell>
                         {sale.salesPrice ? `$${sale.salesPrice.toLocaleString()}` : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {sale.totalMargin ? (
+                          <span className={sale.totalMargin >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            ${sale.totalMargin.toLocaleString()}
+                          </span>
+                        ) : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {sale.modeOfPayment && (
+                            <p>{sale.modeOfPayment}</p>
+                          )}
+                          {sale.paymentPortal && (
+                            <p className="text-gray-500">{sale.paymentPortal}</p>
+                          )}
+                          {sale.paymentDate && (
+                            <p className="text-xs text-gray-500">
+                              {new Date(sale.paymentDate).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(sale.status)}>

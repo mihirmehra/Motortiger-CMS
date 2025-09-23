@@ -52,9 +52,60 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const agent = searchParams.get('agent') || '';
+    const dateFilter = searchParams.get('dateFilter') || '';
+    const startDate = searchParams.get('startDate') || '';
+    const endDate = searchParams.get('endDate') || '';
 
     const skip = (page - 1) * limit;
     const filter = permissions.getDataFilter();
+
+    // Add date filter
+    if (dateFilter) {
+      let dateQuery: any = {};
+      
+      if (dateFilter === 'today') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        dateQuery = {
+          createdAt: {
+            $gte: today,
+            $lt: tomorrow
+          }
+        };
+      } else if (dateFilter === 'yesterday') {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        const today = new Date(yesterday);
+        today.setDate(today.getDate() + 1);
+        dateQuery = {
+          createdAt: {
+            $gte: yesterday,
+            $lt: today
+          }
+        };
+      } else if (dateFilter === 'custom' && startDate && endDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateQuery = {
+          createdAt: {
+            $gte: start,
+            $lte: end
+          }
+        };
+      }
+      
+      if (Object.keys(dateQuery).length > 0) {
+        (filter as any).$and = [
+          ...((filter as any).$and || []),
+          dateQuery
+        ];
+      }
+    }
 
     // Add search filter
     if (search) {
@@ -143,6 +194,12 @@ export async function POST(request: NextRequest) {
 
     // Validate the request body
     const validation = validateData(leadSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.errors },
+        { status: 400 }
+      );
+    }
 
     await connectDB();
 
@@ -287,7 +344,8 @@ export async function POST(request: NextRequest) {
         paymentId: generatePaymentId(),
         leadId: lead._id,
         customerName: lead.customerName,
-        customerPhone: lead.phoneNumber,
+        customerPhone: body.phoneNumber || lead.phoneNumber,
+        alternateNumber: body.alternateNumber || lead.alternateNumber,
         customerEmail: lead.customerEmail,
         modeOfPayment: body.modeOfPayment || 'Not specified',
         paymentPortal: body.paymentPortal,
@@ -333,13 +391,15 @@ export async function POST(request: NextRequest) {
           shopName: product.vendorInfo.shopName || 'Not specified',
           vendorAddress: product.vendorInfo.address || 'Not specified',
           orderNo: generateOrderNumber(),
-          customerId: lead._id,
+          customerId: lead._id.toString(),
           customerName: lead.customerName,
           customerPhone: lead.phoneNumber,
+          alternateNumber: leadData.alternateNumber,
           customerEmail: lead.customerEmail,
           orderStatus: 'stage1 (engine pull)',
           productType: product.productType,
           productName: product.productName,
+          pitchedProductPrice: product.pitchedProductPrice,
           productAmount: product.productAmount,
           quantity: product.quantity,
           yearOfMfg: product.yearOfMfg,
@@ -351,6 +411,11 @@ export async function POST(request: NextRequest) {
           partNumber: product.partNumber,
           vin: product.vin,
           modeOfPayment: product.vendorInfo.modeOfPayment,
+          vendorPaymentMode: product.vendorInfo.modeOfPayment,
+          vendorPaymentAmount: product.vendorInfo.paymentAmount,
+          vendorContactPerson: product.vendorInfo.contactPerson,
+          vendorPhone: product.vendorInfo.phone,
+          vendorEmail: product.vendorInfo.email,
           dateOfBooking: product.vendorInfo.dateOfBooking,
           dateOfDelivery: product.vendorInfo.dateOfDelivery,
           trackingNumber: product.vendorInfo.trackingNumber,

@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     let filter: any = { 
       isDone: false,
-      scheduledDate: { $lte: now }
+      $or: [
+        { scheduledDate: { $lte: now } }, // Overdue
+        { scheduledDate: { $exists: false } } // No scheduled date
+      ]
     };
 
     // Role-based filtering for pending follow-ups

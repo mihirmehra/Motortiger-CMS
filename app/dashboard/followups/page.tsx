@@ -78,6 +78,15 @@ export default function FollowupsPage() {
     loadFollowups();
   }, [currentPage, search, statusFilter, doneFilter]);
 
+  useEffect(() => {
+    // Clear pending followup notifications when followups page is opened
+    const clearPendingNotifications = () => {
+      // This will be handled by the FollowupNotification component
+    };
+    
+    clearPendingNotifications();
+  }, []);
+
   const loadFollowups = async () => {
     try {
       const token = localStorage.getItem('token');

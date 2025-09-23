@@ -69,23 +69,45 @@ export const ALLOWED_FILE_TYPES = [
   'image/jpeg',
   'image/png',
   'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'video/mp4',
+  'video/avi',
+  'video/mov',
+  'video/wmv',
+  'video/flv',
+  'video/webm',
+  'audio/mp3',
+  'audio/wav',
+  'audio/ogg',
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+  'application/zip',
+  'application/x-rar-compressed',
+  'application/x-7z-compressed'
 ];
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB for chat files
 
 export function validateFile(file: File): { valid: boolean; error?: string } {
   if (file.size > MAX_FILE_SIZE) {
-    return { valid: false, error: 'File size exceeds 10MB limit' };
+    return { valid: false, error: 'File size exceeds 50MB limit' };
   }
 
   if (!ALLOWED_FILE_TYPES.includes(file.type)) {
     return { valid: false, error: 'File type not allowed' };
   }
 
+  // Additional validation for empty files
+  if (file.size === 0) {
+    return { valid: false, error: 'File is empty' };
+  }
   return { valid: true };
 }

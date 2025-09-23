@@ -1,11 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 export interface FollowupData {
   followupDate: string;
@@ -24,70 +32,58 @@ interface FollowupModalProps {
   followupType: string;
 }
 
-export default function FollowupModal({ 
-  isOpen, 
-  onClose, 
-  onSchedule, 
-  leadData, 
-  followupType 
+export default function FollowupModal({
+  isOpen,
+  onClose,
+  onSchedule,
+  leadData,
+  followupType,
 }: FollowupModalProps) {
   const [formData, setFormData] = useState<FollowupData>({
     followupDate: '',
     followupTime: '',
-    notes: ''
+    notes: '',
   });
   const [loading, setLoading] = useState(false);
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.followupDate || !formData.followupTime) {
-      alert('Please select both date and time for the follow-up');
+      toast.error('Please select both date and time for the follow-up.');
       return;
     }
 
     setLoading(true);
     try {
       await onSchedule(formData);
+      // Reset form and close modal only after successful schedule
       setFormData({ followupDate: '', followupTime: '', notes: '' });
       onClose();
     } catch (error) {
-      console.error('Error scheduling follow-up:', error);
+      console.error('Scheduling failed:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Schedule {followupType}
-          </DialogTitle>
+          <DialogTitle>Schedule {followupType}</DialogTitle>
+          <DialogDescription>
+            For {leadData.customerName} (Lead #{leadData.leadNumber})
+          </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">
-              <strong>Customer:</strong> {leadData.customerName}
-            </p>
-            <p className="text-sm text-gray-600">
-              <strong>Lead:</strong> {leadData.leadNumber}
-            </p>
-            <p className="text-sm text-gray-600">
-              <strong>Follow-up Type:</strong> {followupType}
-            </p>
-          </div>
-
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div>
             <Label htmlFor="followupDate">Follow-up Date *</Label>
             <Input
@@ -100,7 +96,6 @@ export default function FollowupModal({
               className="mt-1"
             />
           </div>
-
           <div>
             <Label htmlFor="followupTime">Follow-up Time *</Label>
             <Input
@@ -132,6 +127,7 @@ export default function FollowupModal({
               type="button"
               variant="outline"
               onClick={onClose}
+              className="mt-1"
             >
               Cancel
             </Button>
