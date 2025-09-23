@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         to: formattedToNumber,
         body: content,
         mediaUrl: mediaUrls,
-        statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/sms/webhooks/status`
+        statusCallback: `https://motortiger-cms.vercel.app/api/sms/webhooks/status`
       });
 
       sms.status = twilioResponse.status;
