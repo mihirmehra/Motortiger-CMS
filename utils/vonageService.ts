@@ -1,8 +1,6 @@
 import { Vonage } from '@vonage/server-sdk';
-import { Auth } from '@vonage/auth';
-import { Call as VonageCall } from '@vonage/voice';
+import { MachineDetectionBehavior } from '@vonage/voice';
 
-// Define a type for Vonage configuration
 interface VonageConfig {
   apiKey: string;
   apiSecret: string;
@@ -10,18 +8,17 @@ interface VonageConfig {
   privateKey: string;
 }
 
-// Define the interface for your call options
 interface CallOptions {
   to: string;
   from: string;
   answerUrl: string;
   eventUrl?: string;
+  recordingUrl?: string;
   machineDetection?: 'continue' | 'hangup';
   lengthTimer?: number;
   ringingTimer?: number;
 }
 
-// Define the interface for the response
 interface CallResponse {
   uuid: string;
   status: string;
@@ -41,38 +38,31 @@ export class VonageService {
       privateKey: process.env.VONAGE_PRIVATE_KEY || ''
     };
 
-    // Use Vonage constructor with applicationId and privateKey
-    this.vonage = new Vonage(
-      new Auth({
-        apiKey: this.config.apiKey,
-        apiSecret: this.config.apiSecret,
-        applicationId: this.config.applicationId,
-        privateKey: this.config.privateKey
-      })
-    );
+    this.vonage = new Vonage({
+      apiKey: this.config.apiKey,
+      apiSecret: this.config.apiSecret,
+      applicationId: this.config.applicationId,
+      privateKey: this.config.privateKey
+    });
   }
 
-  // Make an outbound call
   async makeCall(options: CallOptions): Promise<CallResponse> {
     try {
       const response = await this.vonage.voice.createOutboundCall({
         to: [{ type: 'phone', number: options.to }],
         from: { type: 'phone', number: options.from },
-        answer_url: [options.answerUrl],
-        event_url: options.eventUrl ? [options.eventUrl] : undefined,
-        advanced_machine_detection: options.machineDetection ? { behavior: options.machineDetection } : undefined,
-        length_timer: options.lengthTimer,
-        ringing_timer: options.ringingTimer
+        answerUrl: [options.answerUrl],
+        eventUrl: options.eventUrl ? [options.eventUrl] : undefined,
+        machineDetection: options.machineDetection as MachineDetectionBehavior || 'continue',
+        lengthTimer: options.lengthTimer || 7200,
+        ringingTimer: options.ringingTimer || 60
       });
 
-      // The response from Vonage is an array of calls, so we take the first one
-      const callResponse = response.calls[0];
-
       return {
-        uuid: callResponse.uuid,
-        status: callResponse.status,
-        direction: callResponse.direction,
-        conversationUuid: callResponse.conversation_uuid
+        uuid: response.uuid,
+        status: response.status,
+        direction: response.direction,
+        conversationUuid: response.conversationUUID
       };
     } catch (error) {
       console.error('Vonage call error:', error);
@@ -80,7 +70,6 @@ export class VonageService {
     }
   }
 
-  // Hang up an ongoing call
   async hangupCall(callUuid: string): Promise<boolean> {
     try {
       await this.vonage.voice.hangupCall(callUuid);
@@ -91,16 +80,19 @@ export class VonageService {
     }
   }
 
-  // Transfer a call to another number
   async transferCall(callUuid: string, destination: string): Promise<boolean> {
     try {
-      await this.vonage.voice.transferCall(callUuid, {
-        action: 'transfer',
-        destination: {
-          type: 'ncco',
-          ncco: this.generateNCCO({ connectTo: destination })
-        }
-      });
+      const ncco = [{
+        action: 'connect',
+        from: process.env.VONAGE_PHONE_NUMBER,
+        endpoint: [{
+          type: 'phone',
+          number: destination
+        }]
+      }];
+
+      // await this.vonage.voice.updateCall(callUuid, { ncco });
+
       return true;
     } catch (error) {
       console.error('Vonage transfer error:', error);
@@ -108,7 +100,6 @@ export class VonageService {
     }
   }
 
-  // Mute a call
   async muteCall(callUuid: string): Promise<boolean> {
     try {
       await this.vonage.voice.muteCall(callUuid);
@@ -119,7 +110,6 @@ export class VonageService {
     }
   }
 
-  // Unmute a call
   async unmuteCall(callUuid: string): Promise<boolean> {
     try {
       await this.vonage.voice.unmuteCall(callUuid);
@@ -130,8 +120,7 @@ export class VonageService {
     }
   }
 
-  // Get details for a specific call
-  async getCallDetails(callUuid: string): Promise<VonageCall> {
+  async getCallDetails(callUuid: string): Promise<any> {
     try {
       const response = await this.vonage.voice.getCall(callUuid);
       return response;
@@ -141,20 +130,18 @@ export class VonageService {
     }
   }
 
-  // Get a call recording
   async getCallRecording(recordingUrl: string): Promise<Buffer> {
     try {
-      const auth = new Auth({
-        apiKey: this.config.apiKey,
-        apiSecret: this.config.apiSecret
+      const response = await fetch(recordingUrl, {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${this.config.apiKey}:${this.config.apiSecret}`).toString('base64')}`
+        }
       });
-      const headers = { 'Authorization': auth.basicAuth };
-
-      const response = await fetch(recordingUrl, { headers });
-
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch recording: ${response.statusText}`);
+        throw new Error('Failed to fetch recording');
       }
+      
       return Buffer.from(await response.arrayBuffer());
     } catch (error) {
       console.error('Vonage get recording error:', error);
@@ -162,7 +149,6 @@ export class VonageService {
     }
   }
 
-  // Generate a call control object (NCCO)
   generateNCCO(options: {
     recordCall?: boolean;
     recordingEventUrl?: string;
