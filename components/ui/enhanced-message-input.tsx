@@ -1,4 +1,4 @@
-'use client';
+<Share className="h-3 w-3" />'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,8 @@ import {
   Hash,
   Bold,
   Italic,
-  Underline
+  Underline,
+  Share
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
