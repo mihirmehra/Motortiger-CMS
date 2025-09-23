@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, MessageSquare, FileText, Image, Video, Share, Clock, User } from 'lucide-react';
+import { Search, MessageSquare, FileText, Image, Video, Share, Clock, User, ExternalLink } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SearchResult {
@@ -236,7 +236,7 @@ export default function ChatSearch({ onSelectChat }: ChatSearchProps) {
                       {/* Chat Avatar */}
                       <Avatar className="h-10 w-10">
                         <AvatarFallback className={`${getUserColor(result.chatId)} text-white text-sm font-medium`}>
-                          {result.chatType === 'group' ? <Users className="h-5 w-5" /> : getUserInitials(result.chatName)}
+                          {result.chatType === 'group' ? <User className="h-5 w-5" /> : getUserInitials(result.chatName)}
                         </AvatarFallback>
                       </Avatar>
 
