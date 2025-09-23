@@ -42,7 +42,7 @@ const SMSSchema = new Schema<ISMS>(
     content: { type: String, required: true },
     status: {
       type: String,
-      enum: ['sent', 'delivered', 'failed', 'pending', 'received'],
+      enum: ['queued','sent', 'delivered', 'failed', 'pending', 'received'],
       required: true
     },
     sentAt: { type: Date, required: true },
