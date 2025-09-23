@@ -7,6 +7,10 @@ import { generateUniqueId } from '@/utils/idGenerator';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.formData();
+    
+    // Log the entire received payload for debugging
+    console.log('Received webhook body:', Array.from(body.entries()));
+    
     const messageSid = body.get('MessageSid') as string;
     const from = body.get('From') as string;
     const to = body.get('To') as string;
