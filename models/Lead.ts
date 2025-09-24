@@ -56,9 +56,16 @@ export interface ILeadProduct {
   model?: string;
   trim?: string;
   engineSize?: string;
+  // Part-specific fields
   partType?: 'used' | 'new';
   partNumber?: string;
   vin?: string;
+  // Legacy fields for backward compatibility
+  mileageQuote?: string;
+  specification?: string;
+  attention?: string;
+  warranty?: string;
+  miles?: string;
   vendorInfo?: {
     vendorId?: string;
     shopName?: string;
@@ -69,7 +76,7 @@ export interface ILeadProduct {
     dateOfDelivery?: Date;
     trackingNumber?: string;
     shippingCompany?: string;
-    proofOfDelivery?: string;
+    proofOfDelivery?: string; // File path for uploaded document
     contactPerson?: string;
     phone?: string;
     email?: string;
@@ -95,6 +102,14 @@ export interface ILead {
   sameShippingInfo?: boolean;
   billingInfo?: IBillingInfo;
   shippingInfo?: IShippingInfo;
+  // Legacy address fields for backward compatibility
+  billingAddress?: string;
+  shippingAddress?: string;
+  mechanicName?: string;
+  contactPhone?: string;
+  state?: string;
+  zone?: string;
+  callType?: string;
   products: ILeadProduct[];
   // Payment Information
   modeOfPayment?: string;
@@ -107,6 +122,7 @@ export interface ILead {
   costPrice?: number;
   totalMargin?: number;
   refunded?: number;
+  // Tentative pricing fields
   tentativeQuotedPrice?: number;
   tentativeCostPrice?: number;
   tentativeMargin?: number;
@@ -182,9 +198,16 @@ const LeadProductSchema = new Schema<ILeadProduct>({
   model: String,
   trim: String,
   engineSize: String,
+  // Part-specific fields
   partType: { type: String, enum: ['used', 'new'] },
   partNumber: String,
   vin: String,
+  // Legacy fields
+  mileageQuote: String,
+  specification: String,
+  attention: String,
+  warranty: String,
+  miles: String,
   vendorInfo: {
     vendorId: String,
     shopName: String,
@@ -219,7 +242,7 @@ const LeadSchema = new Schema(
       type: String,
       validate: {
         validator: function (v: string) {
-          if (!v) return true;
+          if (!v) return true; // Allow empty email
           return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
         },
         message: 'Invalid email format',
@@ -256,11 +279,19 @@ const LeadSchema = new Schema(
     sameShippingInfo: { type: Boolean, default: false },
     billingInfo: BillingInfoSchema,
     shippingInfo: ShippingInfoSchema,
+    // Legacy address fields for backward compatibility
+    billingAddress: String,
+    shippingAddress: String,
+    mechanicName: String,
+    contactPhone: String,
+    state: String,
+    zone: String,
+    callType: String,
     products: [LeadProductSchema],
     modeOfPayment: String,
     paymentPortal: { 
       type: String, 
-      enum: ['EasyPayDirect', 'Authorize.net', ''],
+      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle', ''],
       default: ''
     },
     cardNumber: String,
@@ -271,6 +302,7 @@ const LeadSchema = new Schema(
     costPrice: Number,
     totalMargin: { type: Number, default: 0 },
     refunded: Number,
+    // Tentative pricing fields
     tentativeQuotedPrice: Number,
     tentativeCostPrice: Number,
     tentativeMargin: { type: Number, default: 0 },
@@ -322,9 +354,6 @@ const LeadSchema = new Schema(
 LeadSchema.pre('save', function (next) {
   if (this.salesPrice && this.costPrice) {
     this.totalMargin = this.salesPrice - this.costPrice;
-  }
-  if (this.tentativeQuotedPrice && this.tentativeCostPrice) {
-    this.tentativeMargin = this.tentativeQuotedPrice - this.tentativeCostPrice;
   }
   next();
 });

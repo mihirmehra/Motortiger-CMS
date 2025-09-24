@@ -848,7 +848,7 @@ export default function EditLeadPage() {
                     >
                       <option value="">Select Mode</option>
                       <option value="card">Card</option>
-                      <option value="zelle">Zelle</option>
+                      <option value="Zelle">Zelle</option>
                       <option value="wire">Wire</option>
                       <option value="cashapp">CashApp</option>
                       <option value="check">Check</option>
@@ -856,13 +856,18 @@ export default function EditLeadPage() {
                   </div>
                   <div>
                     <Label htmlFor="paymentPortal">Payment Portal</Label>
-                    <Input
+                    <select
                       id="paymentPortal"
                       name="paymentPortal"
                       value={paymentData.paymentPortal}
                       onChange={handlePaymentChange}
-                      className="mt-1"
-                    />
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Payment Portal</option>
+                      <option value="EasyPayDirect">EasyPayDirect</option>
+                      <option value="Authorize.net">Authorize.net</option>
+                      <option value="Zelle">Zelle</option>
+                    </select>
                   </div>
                   <div>
                     <Label htmlFor="cardNumber">Card Number (Last 4 digits)</Label>
@@ -1355,7 +1360,7 @@ export default function EditLeadPage() {
                             className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="">Select Mode</option>
-                            <option value="zelle">Zelle</option>
+                            <option value="Zelle">Zelle</option>
                             <option value="wire">Wire</option>
                             <option value="card">Card</option>
                             <option value="cashapp">CashApp</option>

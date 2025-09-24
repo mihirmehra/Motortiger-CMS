@@ -114,69 +114,6 @@ export async function PUT(
     const body = await request.json();
     const oldValues = lead.toObject();
 
-    // Handle status change to follow-up types - Create Follow-up Record
-    const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
-    if (followupStatuses.includes(body.status) && !followupStatuses.includes(lead.status)) {
-      // Create followup record without validation
-      const followupData = {
-        followupId: generateFollowupId(),
-        leadId: lead._id,
-        leadNumber: lead.leadNumber,
-        customerName: lead.customerName,
-        customerEmail: lead.customerEmail || '',
-        phoneNumber: lead.phoneNumber,
-        productName: lead.products?.[0]?.productName || '',
-        salesPrice: lead.salesPrice || body.salesPrice,
-        status: body.status,
-        assignedAgent: lead.assignedAgent,
-        dateCreated: new Date(),
-        scheduledDate: body.scheduledDate ? new Date(body.scheduledDate) : undefined,
-        scheduledTime: body.scheduledTime || '',
-        isDone: false,
-        notes: body.followupNotes ? [body.followupNotes] : [],
-        createdBy: user.id,
-        updatedBy: user.id
-      };
-
-      const followup = new Followup(followupData);
-      await followup.save();
-
-      // Add to lead's scheduled followups
-      if (body.scheduledDate && body.scheduledTime) {
-        lead.scheduledFollowups.push({
-          followupType: body.status,
-          scheduledDate: new Date(`${body.scheduledDate}T${body.scheduledTime}`),
-          scheduledTime: body.scheduledTime,
-          notes: body.followupNotes || '',
-          isCompleted: false,
-          createdBy: user.id,
-          createdAt: new Date()
-        });
-      }
-    }
-
-    // Handle status change to "Sale Payment Done" - Create Sale Record
-    if (body.status === 'Sale Payment Done' && lead.status !== 'Sale Payment Done') {
-      const sale = new Sale({
-        leadId: lead._id,
-        saleId: generateSaleId(),
-        customerName: lead.customerName,
-        customerEmail: lead.customerEmail || '',
-        phoneNumber: lead.phoneNumber,
-        alternateNumber: lead.alternateNumber,
-        productName: lead.products?.[0]?.productName,
-        salesPrice: body.salesPrice || lead.salesPrice,
-        costPrice: body.costPrice || lead.costPrice,
-        totalMargin: (body.salesPrice || lead.salesPrice || 0) - (body.costPrice || lead.costPrice || 0),
-        modeOfPayment: body.modeOfPayment || lead.modeOfPayment,
-        paymentPortal: body.paymentPortal || lead.paymentPortal,
-        paymentDate: body.paymentDate ? new Date(body.paymentDate) : lead.paymentDate,
-        assignedAgent: lead.assignedAgent,
-        createdBy: user.id,
-        updatedBy: user.id,
-      });
-      await sale.save();
-    }
     // Handle payment record creation/update if payment information is provided
     if (body.salesPrice && body.salesPrice > 0) {
       const PaymentRecord = (await import('@/models/PaymentRecord')).default;
@@ -187,8 +124,7 @@ export async function PUT(
       if (existingPayment) {
         // Update existing payment record
         Object.assign(existingPayment, {
-          customerPhone: body.phoneNumber || lead.phoneNumber,
-          alternateNumber: body.alternateNumber || lead.alternateNumber,
+          customerPhone: lead.phoneNumber,
           customerEmail: lead.customerEmail,
           modeOfPayment: body.modeOfPayment || existingPayment.modeOfPayment,
           paymentPortal: body.paymentPortal,
@@ -230,8 +166,7 @@ export async function PUT(
           paymentId: generatePaymentId(),
           leadId: lead._id,
           customerName: lead.customerName,
-          customerPhone: body.phoneNumber || lead.phoneNumber,
-          alternateNumber: body.alternateNumber || lead.alternateNumber,
+          customerPhone: lead.phoneNumber,
           customerEmail: lead.customerEmail,
           modeOfPayment: body.modeOfPayment || 'Not specified',
           paymentPortal: body.paymentPortal,
@@ -278,11 +213,11 @@ export async function PUT(
       for (const product of body.products) {
         if (
           product.vendorInfo &&
-          (product.vendorInfo.shopName || product.vendorInfo.address)
+          (product.vendorInfo.vendorName || product.vendorInfo.vendorLocation)
         ) {
           // Check if vendor order already exists for this product
           let existingOrder = await VendorOrder.findOne({
-            customerId: lead._id.toString(),
+            customerId: lead._id,
             productName: product.productName,
           });
 
@@ -291,9 +226,7 @@ export async function PUT(
             Object.assign(existingOrder, {
               shopName: product.vendorInfo.shopName || existingOrder.shopName,
               vendorAddress: product.vendorInfo.address || existingOrder.vendorAddress,
-              customerName: body.customerName || lead.customerName,
               customerPhone: lead.phoneNumber,
-              alternateNumber: body.alternateNumber || lead.alternateNumber,
               customerEmail: lead.customerEmail,
               productName: product.productName,
               pitchedProductPrice: product.pitchedProductPrice,
@@ -328,10 +261,9 @@ export async function PUT(
               shopName: product.vendorInfo.shopName || 'Not specified',
               vendorAddress: product.vendorInfo.address || 'Not specified',
               orderNo: generateOrderNumber(),
-              customerId: lead._id.toString(),
+              customerId: lead._id,
               customerName: lead.customerName,
               customerPhone: lead.phoneNumber,
-              alternateNumber: body.alternateNumber || lead.alternateNumber,
               customerEmail: lead.customerEmail,
               orderStatus: 'stage1 (engine pull)',
               productType: product.productType,
@@ -376,12 +308,31 @@ export async function PUT(
       }
     }
 
+    // Handle status change to "Sale Payment Done"
+    if (
+      body.status === 'Product Purchased' &&
+      lead.status !== 'Product Purchased'
+    ) {
+      // Create sale record
+      const sale = new Sale({
+        leadId: lead._id,
+        saleId: generateSaleId(),
+        customerName: lead.customerName,
+        customerEmail: lead.customerEmail,
+        phoneNumber: lead.phoneNumber,
+        productName: lead.products?.[0]?.productName,
+        salesPrice: lead.salesPrice,
+        assignedAgent: lead.assignedAgent,
+        createdBy: user.id,
+        updatedBy: user.id,
+      });
+      await sale.save();
+    }
 
-    // Handle status change to "Product Purchased" - Update Target Achievement
+    // Handle status change to "Sale Closed"
     if (body.status === 'Product Purchased' && lead.status !== 'Product Purchased') {
       // Update target achievement
-      const finalMargin = (body.salesPrice || lead.salesPrice || 0) - (body.costPrice || lead.costPrice || 0);
-      if (finalMargin > 0) {
+      if (lead.totalMargin) {
         await Target.updateMany(
           {
             assignedUsers: lead.assignedAgent,
@@ -389,7 +340,7 @@ export async function PUT(
             startDate: { $lte: new Date() },
             endDate: { $gte: new Date() },
           },
-          { $inc: { achievedAmount: finalMargin } }
+          { $inc: { achievedAmount: lead.totalMargin } }
         );
       }
     }
