@@ -46,105 +46,105 @@ export default function ChatNotification({ userId }: ChatNotificationProps) {
   //   };
   // }, [userId]);
 
-  const checkForNewMessages = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/chats/new-messages?since=${lastCheckTime.toISOString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  // const checkForNewMessages = async () => {
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const response = await fetch(`/api/chats/new-messages?since=${lastCheckTime.toISOString()}`, {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`
+  //       }
+  //     });
 
-      if (response.ok) {
-        const data = await response.json();
-        const newMessages = data.newMessages || [];
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       const newMessages = data.newMessages || [];
 
-        if (newMessages.length > 0) {
-          newMessages.forEach((message: UnreadMessage) => {
-            const toastId = `${message.chatId}-${message.timestamp}`;
-            if (!shownToastsRef.current.has(toastId)) {
-              // Get message type icon
-              const getMessageIcon = () => {
-                switch (message.messageType) {
-                  case 'file': return '📎';
-                  case 'image': return '🖼️';
-                  case 'video': return '🎥';
-                  case 'lead_share': return '📋';
-                  default: return '💬';
-                }
-              };
+  //       if (newMessages.length > 0) {
+  //         newMessages.forEach((message: UnreadMessage) => {
+  //           const toastId = `${message.chatId}-${message.timestamp}`;
+  //           if (!shownToastsRef.current.has(toastId)) {
+  //             // Get message type icon
+  //             const getMessageIcon = () => {
+  //               switch (message.messageType) {
+  //                 case 'file': return '📎';
+  //                 case 'image': return '🖼️';
+  //                 case 'video': return '🎥';
+  //                 case 'lead_share': return '📋';
+  //                 default: return '💬';
+  //               }
+  //             };
 
-              const messagePreview = message.messageType === 'text'
-                ? message.content.substring(0, 100)
-                : `${getMessageIcon()} ${message.messageType === 'lead_share' ? 'Shared lead details' : 'Shared a file'}`;
+  //             const messagePreview = message.messageType === 'text'
+  //               ? message.content.substring(0, 100)
+  //               : `${getMessageIcon()} ${message.messageType === 'lead_share' ? 'Shared lead details' : 'Shared a file'}`;
 
-              toast.info(
-                <div className="flex items-start gap-3 w-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-500 text-white text-xs">
-                      {message.senderName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">{message.senderName}</span>
-                      <Badge variant="outline" className="text-xs px-1 py-0">
-                        {message.chatType}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 truncate">{messagePreview}</p>
-                    <p className="text-xs text-gray-400">{message.chatName}</p>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="ml-2"
-                    aria-label="View message"
-                    onClick={() => {
-                      router.push(`/dashboard/chat?chatId=${message.chatId}`);
-                      setUnreadMessages(prev => prev.filter(msg => `${msg.chatId}-${msg.timestamp}` !== toastId));
-                      shownToastsRef.current.add(toastId);
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>,
-                {
-                  duration: 8000,
-                  onDismiss: () => {
-                    setUnreadMessages(prev => {
-                      const exists = prev.some(msg => `${msg.chatId}-${msg.timestamp}` === toastId);
-                      if (!exists) {
-                        return [...prev, message];
-                      }
-                      return prev;
-                    });
-                    shownToastsRef.current.add(toastId);
-                  }
-                }
-              );
-              shownToastsRef.current.add(toastId);
-            }
-          });
-          setLastCheckTime(new Date());
-        }
-      }
+  //             toast.info(
+  //               <div className="flex items-start gap-3 w-full">
+  //                 <Avatar className="h-8 w-8">
+  //                   <AvatarFallback className="bg-blue-500 text-white text-xs">
+  //                     {message.senderName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+  //                   </AvatarFallback>
+  //                 </Avatar>
+  //                 <div className="flex-1 min-w-0">
+  //                   <div className="flex items-center gap-2 mb-1">
+  //                     <span className="font-medium text-sm">{message.senderName}</span>
+  //                     <Badge variant="outline" className="text-xs px-1 py-0">
+  //                       {message.chatType}
+  //                     </Badge>
+  //                   </div>
+  //                   <p className="text-sm text-gray-600 truncate">{messagePreview}</p>
+  //                   <p className="text-xs text-gray-400">{message.chatName}</p>
+  //                 </div>
+  //                 <Button
+  //                   size="icon"
+  //                   variant="ghost"
+  //                   className="ml-2"
+  //                   aria-label="View message"
+  //                   onClick={() => {
+  //                     router.push(`/dashboard/chat?chatId=${message.chatId}`);
+  //                     setUnreadMessages(prev => prev.filter(msg => `${msg.chatId}-${msg.timestamp}` !== toastId));
+  //                     shownToastsRef.current.add(toastId);
+  //                   }}
+  //                 >
+  //                   <Eye className="h-4 w-4" />
+  //                 </Button>
+  //               </div>,
+  //               {
+  //                 duration: 8000,
+  //                 onDismiss: () => {
+  //                   setUnreadMessages(prev => {
+  //                     const exists = prev.some(msg => `${msg.chatId}-${msg.timestamp}` === toastId);
+  //                     if (!exists) {
+  //                       return [...prev, message];
+  //                     }
+  //                     return prev;
+  //                   });
+  //                   shownToastsRef.current.add(toastId);
+  //                 }
+  //               }
+  //             );
+  //             shownToastsRef.current.add(toastId);
+  //           }
+  //         });
+  //         setLastCheckTime(new Date());
+  //       }
+  //     }
 
-      // Update total unread count
-      const unreadResponse = await fetch('/api/chats/unread-count', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  //     // Update total unread count
+  //     const unreadResponse = await fetch('/api/chats/unread-count', {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`
+  //       }
+  //     });
 
-      if (unreadResponse.ok) {
-        const unreadData = await unreadResponse.json();
-        setTotalUnreadCount(unreadData.unreadCount);
-      }
-    } catch (error) {
-      console.error('Error checking for new messages:', error);
-    }
-  };
+  //     if (unreadResponse.ok) {
+  //       const unreadData = await unreadResponse.json();
+  //       setTotalUnreadCount(unreadData.unreadCount);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error checking for new messages:', error);
+  //   }
+  // };
 
   const handleViewMessages = () => {
     router.push('/dashboard/chat');
