@@ -47,21 +47,21 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   //   }
   // }, [user]);
 
-  const loadUnreadCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/chats/unread-count', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+  // const loadUnreadCount = async () => {
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const response = await fetch('/api/chats/unread-count', {
+  //       headers: { 'Authorization': `Bearer ${token}` }
+  //     });
 
-      if (response.ok) {
-        const data = await response.json();
-        setUnreadCount(data.unreadCount);
-      }
-    } catch (error) {
-      console.error('Failed to load unread count:', error);
-    }
-  };
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setUnreadCount(data.unreadCount);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to load unread count:', error);
+  //   }
+  // };
 
   const menuItems = [
     {
