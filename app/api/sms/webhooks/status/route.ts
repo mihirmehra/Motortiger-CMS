@@ -5,7 +5,7 @@ import SMS from '@/models/SMS';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.formData();
-    const messageSid = body.get('MessageSid') as string;
+    const messageSid = "MG51084e5ae51fbcc93cf233d5777a3b0e"
     const messageStatus = body.get('MessageStatus') as string;
     const errorCode = body.get('ErrorCode') as string;
     const errorMessage = body.get('ErrorMessage') as string;
