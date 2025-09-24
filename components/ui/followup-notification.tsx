@@ -26,21 +26,21 @@ export default function FollowupNotification({ userId }: FollowupNotificationPro
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!userId) return;
+  // useEffect(() => {
+  //   if (!userId) return;
 
-    // Check for upcoming followups every minute
-    intervalRef.current = setInterval(checkUpcomingFollowups, 60000);
+  //   // Check for upcoming followups every minute
+  //   intervalRef.current = setInterval(checkUpcomingFollowups, 60000);
     
-    // Initial check
-    checkUpcomingFollowups();
+  //   // Initial check
+  //   checkUpcomingFollowups();
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [userId]);
+  //   return () => {
+  //     if (intervalRef.current) {
+  //       clearInterval(intervalRef.current);
+  //     }
+  //   };
+  // }, [userId]);
 
   const checkUpcomingFollowups = async () => {
     try {
