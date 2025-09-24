@@ -30,21 +30,21 @@ export default function ChatNotification({ userId }: ChatNotificationProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!userId) return;
+  // useEffect(() => {
+  //   if (!userId) return;
 
-    // Check for new messages every 5 seconds
-    intervalRef.current = setInterval(checkForNewMessages, 5000);
+  //   // Check for new messages every 5 seconds
+  //   intervalRef.current = setInterval(checkForNewMessages, 5000);
     
-    // Initial check
-    checkForNewMessages();
+  //   // Initial check
+  //   checkForNewMessages();
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [userId]);
+  //   return () => {
+  //     if (intervalRef.current) {
+  //       clearInterval(intervalRef.current);
+  //     }
+  //   };
+  // }, [userId]);
 
   const checkForNewMessages = async () => {
     try {

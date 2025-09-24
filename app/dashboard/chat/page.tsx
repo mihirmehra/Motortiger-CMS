@@ -159,24 +159,24 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    if (selectedChat) {
-      const interval = setInterval(() => {
-        loadMessages(selectedChat._id);
-      }, 3000); // Refresh every 3 seconds
+  // useEffect(() => {
+  //   if (selectedChat) {
+  //     const interval = setInterval(() => {
+  //       loadMessages(selectedChat._id);
+  //     }, 3000); // Refresh every 3 seconds
 
-      return () => clearInterval(interval);
-    }
-  }, [selectedChat]);
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [selectedChat]);
 
-  useEffect(() => {
-    // Simulate online status (in real app, this would be WebSocket based)
-    const interval = setInterval(() => {
-      setOnlineUsers(new Set(users.map(u => u._id)));
-    }, 30000);
+  // useEffect(() => {
+  //   // Simulate online status (in real app, this would be WebSocket based)
+  //   const interval = setInterval(() => {
+  //     setOnlineUsers(new Set(users.map(u => u._id)));
+  //   }, 30000);
 
-    return () => clearInterval(interval);
-  }, [users]);
+  //   return () => clearInterval(interval);
+  // }, [users]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
