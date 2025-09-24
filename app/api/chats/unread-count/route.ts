@@ -4,7 +4,7 @@ import Chat from '@/models/Chat';
 import { verifyToken, extractTokenFromRequest } from '@/middleware/auth';
 
 export async function GET(request: NextRequest) {
-  return
+  return NextResponse.json({});
   // try {
   //   const token = extractTokenFromRequest(request);
   //   if (!token) {
