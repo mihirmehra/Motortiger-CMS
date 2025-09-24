@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     // Log the entire received payload for debugging
     console.log('Received webhook body:', Array.from(body.entries()));
     
-    const messageSid = 'MG51084e5ae51fbcc93cf233d5777a3b0e'
+    const messageSid = body.get('MessageSid') as string;
     const from = body.get('From') as string;
     const to = body.get('To') as string;
     const messageBody = body.get('Body') as string;

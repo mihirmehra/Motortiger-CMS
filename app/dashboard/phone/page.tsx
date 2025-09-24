@@ -948,7 +948,7 @@ export default function PhoneSystemPage() {
                         </div>
                         <div className="text-sm">
                           <p className="font-medium">
-                            {sms.messageType === 'outbound' ? 'To' : 'From'}: {sms.messageType === 'outbound' ? sms.toNumber : sms.fromNumber}
+                            {sms.messageType === 'inbound' ? 'To' : 'From'}: {sms.messageType === 'inbound' ? sms.toNumber : sms.fromNumber}
                           </p>
                           {sms.customerName && (
                             <p className="text-gray-600">{sms.customerName}</p>
