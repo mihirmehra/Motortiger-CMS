@@ -707,7 +707,7 @@ export default function AnalyticsPage() {
                       <th className="text-left p-2">Parts</th>
                       <th className="text-left p-2">Total Sales Price</th>
                       <th className="text-left p-2">Total Cost Price</th>
-                      <th className="text-left p-2">Total Margin Tentative</th>
+                      <th className="text-left p-2">Total Margin</th>
                       <th className="text-left p-2">Actions</th>
                     </tr>
                   </thead>
