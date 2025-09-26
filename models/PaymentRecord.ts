@@ -97,7 +97,7 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     paymentStatus: {
       type: String,
       enum: ['pending', 'completed', 'failed', 'refunded', 'disputed'],
-      default: 'pending',
+      default: 'completed',
     },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
