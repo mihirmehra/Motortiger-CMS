@@ -26,6 +26,7 @@ import {
   Save,
   X,
   MessageSquare,
+  Calendar, // NEW: Import Calendar icon
 } from 'lucide-react';
 import ImportModal from '@/components/ui/import-modal';
 import FollowupModal, { FollowupData } from '@/components/ui/followup-modal';
@@ -71,6 +72,15 @@ interface User {
   role: string;
 }
 
+// NEW: Date filter options
+const dateFilterOptions = [
+  { value: 'all', label: 'All Dates' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'this_week', label: 'This Week (Mon-Today)' },
+  { value: 'custom', label: 'Custom Range' },
+];
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +105,13 @@ export default function LeadsPage() {
   const [selectedFollowupType, setSelectedFollowupType] = useState<string>('');
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [selectedLeadForNotes, setSelectedLeadForNotes] = useState<Lead | null>(null);
+  
+  // NEW: Date/Time Filters State
+  const [dateFilterType, setDateFilterType] = useState('all'); 
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [timeInHours, setTimeInHours] = useState(''); 
+  
   const router = useRouter();
 
   const statusOptions = [
@@ -137,8 +154,32 @@ export default function LeadsPage() {
       setCurrentUser(user);
       loadAvailableUsers(user);
     }
-    loadLeads();
-  }, [currentPage, itemsPerPage, search, statusFilter, agentFilter]);
+    // UPDATED: Reset page to 1 if any filter changes
+    if (currentPage !== 1) {
+        setCurrentPage(1);
+    } else {
+        loadLeads();
+    }
+  }, [
+    currentPage, 
+    itemsPerPage, 
+    search, 
+    statusFilter, 
+    agentFilter, 
+    // NEW Dependencies
+    dateFilterType, 
+    customStartDate, 
+    customEndDate, 
+    timeInHours
+  ]);
+
+  // Handle page change separately if needed, but the unified useEffect handles it well.
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadLeads();
+    }
+  }, [currentPage]); 
+
 
   const loadAvailableUsers = async (user: User) => {
     try {
@@ -180,6 +221,11 @@ export default function LeadsPage() {
         ...(search && { search }),
         ...(statusFilter && { status: statusFilter }),
         ...(agentFilter && { agent: agentFilter }),
+        // NEW: Date/Time Filters
+        ...(dateFilterType && { dateFilterType }),
+        ...(dateFilterType === 'custom' && customStartDate && { customStartDate }),
+        ...(dateFilterType === 'custom' && customEndDate && { customEndDate }),
+        ...(timeInHours && parseInt(timeInHours) > 0 && { timeInHours: timeInHours.toString() }), // Ensure timeInHours is stringified if present
       });
 
       const response = await fetch(`/api/leads?${params}`, {
@@ -445,7 +491,7 @@ export default function LeadsPage() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="p-6">
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-4 flex-wrap mb-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -498,6 +544,60 @@ export default function LeadsPage() {
               <option value={50}>50 per page</option>
               <option value={100}>100 per page</option>
             </select>
+          </div>
+          
+          {/* NEW: Date & Time Filters Section */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-700">
+                  <Calendar className="h-4 w-4" /> Filter by Lead Creation Date
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                  
+                  {/* Date Range Type */}
+                  <div className="flex flex-col">
+                      <label className="text-sm font-medium mb-1 text-gray-700">Date Range Preset</label>
+                      <select
+                          value={dateFilterType}
+                          onChange={(e) => {
+                              setDateFilterType(e.target.value);
+                              // Clear custom dates when changing to a preset
+                              if (e.target.value !== 'custom') {
+                                  setCustomStartDate('');
+                                  setCustomEndDate('');
+                              }
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                          {dateFilterOptions.map(option => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                      </select>
+                  </div>
+
+                  {/* Custom Date Inputs (Conditionally Rendered) */}
+                  {dateFilterType === 'custom' && (
+                    <>
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-1 text-gray-700">Start Date</label>
+                        <Input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="py-2"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-1 text-gray-700">End Date</label>
+                        <Input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="py-2"
+                        />
+                      </div>
+                    </>
+                  )}
+              </div>
           </div>
         </CardContent>
       </Card>

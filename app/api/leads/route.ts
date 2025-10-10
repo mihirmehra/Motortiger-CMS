@@ -24,6 +24,48 @@ function generateProductId(): string {
   return `PROD${timestamp.slice(-6)}${random}`;
 }
 
+// Helper function to calculate date ranges (e.g., start of today, start of week)
+const getDateRange = (filter: string, customStartDate?: string, customEndDate?: string) => {
+  const now = new Date();
+  let start: Date | null = null;
+  let end: Date | null = null;
+
+  const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const endOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+  switch (filter) {
+    case 'today':
+      start = startOfDay(now);
+      end = endOfDay(now);
+      break;
+    case 'yesterday':
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      start = startOfDay(yesterday);
+      end = endOfDay(yesterday);
+      break;
+    case 'this_week':
+      // Start of the week (Monday)
+      const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+      start = startOfDay(new Date(now.setDate(diff)));
+      // End date defaults to now, or will be set by timeInHours
+      break;
+    case 'custom':
+      if (customStartDate) {
+        start = new Date(customStartDate);
+        start = startOfDay(start);
+      }
+      if (customEndDate) {
+        end = new Date(customEndDate);
+        end = endOfDay(end);
+      }
+      break;
+  }
+  
+  return { start, end };
+};
+
 export async function GET(request: NextRequest) {
   try {
     const token = extractTokenFromRequest(request);
@@ -52,62 +94,64 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const agent = searchParams.get('agent') || '';
-    const dateFilter = searchParams.get('dateFilter') || '';
-    const startDate = searchParams.get('startDate') || '';
-    const endDate = searchParams.get('endDate') || '';
+    
+    // UPDATED: New date and time filters
+    const dateFilterType = searchParams.get('dateFilterType') || '';
+    const customStartDate = searchParams.get('customStartDate') || '';
+    const customEndDate = searchParams.get('customEndDate') || '';
+    const timeInHours = parseInt(searchParams.get('timeInHours') || '0');
 
     const skip = (page - 1) * limit;
     const filter = permissions.getDataFilter();
 
-    // Add date filter
-    if (dateFilter) {
-      let dateQuery: any = {};
+    // 1. --- Apply Date and Time Filters ---
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+    
+    if (dateFilterType && dateFilterType !== 'all') {
+      const dateRange = getDateRange(dateFilterType, customStartDate, customEndDate);
+      startDate = dateRange.start;
+      endDate = dateRange.end;
+    }
+    
+    // Apply 'Last N Hours' Filter
+    if (timeInHours > 0) {
+      const hoursAgo = new Date();
+      hoursAgo.setHours(hoursAgo.getHours() - timeInHours);
       
-      if (dateFilter === 'today') {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        dateQuery = {
-          createdAt: {
-            $gte: today,
-            $lt: tomorrow
-          }
-        };
-      } else if (dateFilter === 'yesterday') {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-        const today = new Date(yesterday);
-        today.setDate(today.getDate() + 1);
-        dateQuery = {
-          createdAt: {
-            $gte: yesterday,
-            $lt: today
-          }
-        };
-      } else if (dateFilter === 'custom' && startDate && endDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        dateQuery = {
-          createdAt: {
-            $gte: start,
-            $lte: end
-          }
-        };
+      // If a date range is also set, use the LATER of the two start times
+      if (startDate) {
+        startDate = new Date(Math.max(startDate.getTime(), hoursAgo.getTime()));
+      } else {
+        startDate = hoursAgo;
+      }
+      // If no end date is set, use 'now'
+      if (!endDate) {
+        endDate = new Date(); // Current time
+      }
+    }
+    
+    // Construct Mongoose Timestamp Query on `createdAt`
+    if (startDate || endDate) {
+      const dateQuery: any = {};
+      if (startDate) {
+        dateQuery.$gte = startDate;
+      }
+      if (endDate) {
+        dateQuery.$lte = endDate;
       }
       
       if (Object.keys(dateQuery).length > 0) {
         (filter as any).$and = [
           ...((filter as any).$and || []),
-          dateQuery
+          { createdAt: dateQuery }
         ];
       }
     }
+    // --- End Date and Time Filters ---
 
-    // Add search filter
+
+    // Add search filter (Existing Logic)
     if (search) {
       (filter as any).$and = [
         ...((filter as any).$and || []),
@@ -132,12 +176,12 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Add status filter
+    // Add status filter (Existing Logic)
     if (status) {
       (filter as any).status = status;
     }
 
-    // Add agent filter
+    // Add agent filter (Existing Logic)
     if (agent) {
       (filter as any).assignedAgent = agent;
     }
