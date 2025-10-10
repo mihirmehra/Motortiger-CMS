@@ -36,32 +36,41 @@ import {
   Target as TargetIcon
 } from 'lucide-react';
 
+// Helper to get ISO Date string (YYYY-MM-DD)
+const getISODateString = (date: Date): string => date.toISOString().split('T')[0];
+
+interface AgentPerformanceData {
+  agentName: string;
+  totalLeads: number;
+  converted: number;
+  engines: number;
+  transmissions: number;
+  parts: number;
+  totalSalesPrice: number;
+  totalCostPrice: number;
+  totalMarginTentative: number;
+}
+
+interface AgentPerformanceAllStatus {
+  agentName: string; 
+  totalLeads: number; 
+  followups: number;
+  salePaymentDone: number;
+  engines: number;
+  transmissions: number;
+  parts: number;
+  totalPitchedProductPrice: number;
+  totalProductPrice: number;
+  tentativeMargin: number;
+}
+
+
 interface AnalyticsData {
   statusDistribution: Array<{ name: string; value: number; color: string }>;
   monthlyTrends: Array<{ month: string; leads: number; sales: number; revenue: number }>;
-  agentPerformance: Array<{ 
-    agentName: string; 
-    totalLeads: number; 
-    followups: number;
-    salePaymentDone: number;
-    engines: number;
-    transmissions: number;
-    parts: number;
-    totalPitchedProductPrice: number;
-    totalProductPrice: number;
-    tentativeMargin: number;
-  }>;
-  agentPerformanceProductPurchased: Array<{
-    agentName: string;
-    totalLeads: number;
-    converted: number;
-    engines: number;
-    transmissions: number;
-    parts: number;
-    totalSalesPrice: number;
-    totalCostPrice: number;
-    totalMarginTentative: number;
-  }>;
+  agentPerformance: AgentPerformanceAllStatus[];
+  agentPerformanceProductPurchased: AgentPerformanceData[];
+  agentPerformanceSalesPaymentDone: AgentPerformanceData[]; 
   teamPerformance: {
     totalLeads: number;
     converted: number;
@@ -108,9 +117,12 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  
+  // Initialize date range to today
+  const todayISO = getISODateString(new Date());
   const [dateRange, setDateRange] = useState({
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
+    startDate: todayISO,
+    endDate: todayISO
   });
   const [dateFilter, setDateFilter] = useState('today');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -124,11 +136,10 @@ export default function AnalyticsPage() {
       setCurrentUser(JSON.parse(userData));
     }
     
-    // Set default date range to today
-    const today = new Date().toISOString().split('T')[0];
+    // Set default date range to today after user load
     setDateRange({
-      startDate: today,
-      endDate: today
+      startDate: todayISO,
+      endDate: todayISO
     });
     
     loadUsers();
@@ -139,6 +150,7 @@ export default function AnalyticsPage() {
       loadAnalytics();
     }
   }, [dateRange, selectedUsers]);
+
   const loadUsers = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -190,32 +202,33 @@ export default function AnalyticsPage() {
     );
   };
 
+  // FIX: Robust date calculation for quick filters
   const handleDateFilterChange = (filter: string) => {
     setDateFilter(filter);
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
     
     switch (filter) {
       case 'today':
         setDateRange({
-          startDate: today.toISOString().split('T')[0],
-          endDate: today.toISOString().split('T')[0]
+          startDate: getISODateString(today),
+          endDate: getISODateString(today)
         });
         break;
       case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
         setDateRange({
-          startDate: yesterday.toISOString().split('T')[0],
-          endDate: yesterday.toISOString().split('T')[0]
+          startDate: getISODateString(yesterday),
+          endDate: getISODateString(yesterday)
         });
         break;
       case 'thisWeek':
+        const startOfWeek = new Date(today);
+        // Adjust to Monday (1) or Sunday (0) based on locale preference. Here: Sunday (0)
+        startOfWeek.setDate(today.getDate() - today.getDay()); 
         setDateRange({
-          startDate: startOfWeek.toISOString().split('T')[0],
-          endDate: today.toISOString().split('T')[0]
+          startDate: getISODateString(startOfWeek),
+          endDate: getISODateString(today)
         });
         break;
       case 'custom':
@@ -228,7 +241,7 @@ export default function AnalyticsPage() {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `${filename}_${getISODateString(new Date())}.xlsx`);
   };
 
   const calculateColumnTotals = (data: any[], numericColumns: string[]) => {
@@ -238,6 +251,182 @@ export default function AnalyticsPage() {
     });
     return totals;
   };
+
+  const renderAgentPerformanceTable = (
+    data: any[], // Using 'any' to handle the two slightly different interface types
+    title: string, 
+    filename: string,
+    isConvertedTable: boolean = false
+  ) => {
+    
+    // FIX START: Determine the correct numeric columns for calculating totals
+    const numericColumns = isConvertedTable
+      ? [
+          'totalLeads', 'converted', 'engines', 'transmissions', 'parts', 
+          'totalSalesPrice', 'totalCostPrice', 'totalMarginTentative'
+        ]
+      : [
+          'totalLeads', 'followups', 'salePaymentDone', 'engines', 
+          'transmissions', 'parts', 'totalPitchedProductPrice', 'totalProductPrice', 
+          'tentativeMargin'
+        ];
+        
+    const totals = calculateColumnTotals(data, numericColumns);
+    // FIX END
+
+    const tableHeaders = isConvertedTable 
+      ? [
+          'Agent', 'Total Leads', 'Converted', 'Engines', 'Transmissions', 'Parts', 
+          'Total Sales Price', 'Total Cost Price', 'Total Margin', 'Actions'
+        ]
+      : [
+          'Agent', 'Total Leads', 'Follow-ups', 'Sale Payment Done', 'Engines', 
+          'Transmissions', 'Parts', 'Total Pitched Price', 'Total Product Amount', 
+          'Tentative Margin', 'Actions'
+        ];
+
+    const tableDataForExport = data.map((agent: any) => ({
+      'Agent Name': agent.agentName,
+      'Total Leads': agent.totalLeads,
+      ...(isConvertedTable ? {
+        'Converted': agent.converted,
+        'Engines': agent.engines,
+        'Transmissions': agent.transmissions,
+        'Parts': agent.parts,
+        'Total Sales Price': agent.totalSalesPrice,
+        'Total Cost Price': agent.totalCostPrice,
+        'Total Margin Tentative': agent.totalMarginTentative
+      } : {
+        'Follow-ups': agent.followups,
+        'Sale Payment Done': agent.salePaymentDone,
+        'Engines': agent.engines,
+        'Transmissions': agent.transmissions,
+        'Parts': agent.parts,
+        'Total Pitched Product Price': agent.totalPitchedProductPrice,
+        'Total Product Amount': agent.totalProductPrice,
+        'Tentative Margin': agent.tentativeMargin
+      })
+    }));
+
+    return (
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            {title}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadTableAsExcel(tableDataForExport, filename)}
+              className="ml-auto flex items-center gap-1"
+            >
+              <Download className="h-3 w-3" />
+              Export
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  {tableHeaders.map(header => (
+                    <th key={header} className="text-left p-2">{header}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((agent: any, index: number) => (
+                  <tr key={index} className="border-b hover:bg-gray-50">
+                    <td className="p-2 font-medium">{agent.agentName}</td>
+                    <td className="p-2">{agent.totalLeads}</td>
+                    {isConvertedTable ? (
+                      <>
+                        <td className="p-2">{agent.converted}</td>
+                        <td className="p-2">{agent.engines}</td>
+                        <td className="p-2">{agent.transmissions}</td>
+                        <td className="p-2">{agent.parts}</td>
+                        <td className="p-2 font-semibold">${agent.totalSalesPrice.toFixed(2)}</td>
+                        <td className="p-2">${agent.totalCostPrice.toFixed(2)}</td>
+                        <td className="p-2">
+                          <Badge className={agent.totalMarginTentative >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            ${agent.totalMarginTentative.toFixed(2)}
+                          </Badge>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-2">{agent.followups}</td>
+                        <td className="p-2">{agent.salePaymentDone}</td>
+                        <td className="p-2">{agent.engines}</td>
+                        <td className="p-2">{agent.transmissions}</td>
+                        <td className="p-2">{agent.parts}</td>
+                        <td className="p-2 font-semibold">${agent.totalPitchedProductPrice.toFixed(2)}</td>
+                        <td className="p-2">${agent.totalProductPrice.toFixed(2)}</td>
+                        <td className="p-2">
+                          <Badge className={agent.tentativeMargin >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            ${agent.tentativeMargin.toFixed(2)}
+                          </Badge>
+                        </td>
+                      </>
+                    )}
+                    <td className="p-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadUserReport(agent.agentName)}
+                        className="flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Report
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {/* Totals Row */}
+                <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
+                  <td className="p-2">TOTAL</td>
+                  <td className="p-2">{totals.totalLeads}</td>
+                  {isConvertedTable ? (
+                      <>
+                        <td className="p-2">{totals.converted}</td>
+                        <td className="p-2">{totals.engines}</td>
+                        <td className="p-2">{totals.transmissions}</td>
+                        <td className="p-2">{totals.parts}</td>
+                        <td className="p-2">${totals.totalSalesPrice.toFixed(2)}</td>
+                        <td className="p-2">${totals.totalCostPrice.toFixed(2)}</td>
+                        <td className="p-2">
+                          <Badge className={totals.totalMarginTentative >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            ${totals.totalMarginTentative.toFixed(2)}
+                          </Badge>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-2">{totals.followups}</td>
+                        <td className="p-2">{totals.salePaymentDone}</td>
+                        <td className="p-2">{totals.engines}</td>
+                        <td className="p-2">{totals.transmissions}</td>
+                        <td className="p-2">{totals.parts}</td>
+                        <td className="p-2">${totals.totalPitchedProductPrice.toFixed(2)}</td> 
+                        <td className="p-2">${totals.totalProductPrice.toFixed(2)}</td>
+                        <td className="p-2">
+                          <Badge className={totals.tentativeMargin >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            ${totals.tentativeMargin.toFixed(2)}
+                          </Badge>
+                        </td>
+                      </>
+                    )}
+                  <td className="p-2">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
 
   const handleDownloadReport = async (format: 'excel' | 'pdf') => {
     try {
@@ -258,7 +447,7 @@ export default function AnalyticsPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `analytics_report_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+        a.download = `analytics_report_${getISODateString(new Date())}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -415,33 +604,6 @@ export default function AnalyticsPage() {
 
       {analyticsData && (
         <>
-          {/* Tentative Report Section */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Daily Sales & Margin Update
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const reportText = generateTentativeReportText(analyticsData.tentativeReport);
-                    navigator.clipboard.writeText(reportText);
-                    alert('Report copied to clipboard!');
-                  }}
-                  className="ml-auto flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Copy Report
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-gray-50 p-6 rounded-lg font-mono text-sm whitespace-pre-line">
-                {generateTentativeReportText(analyticsData.tentativeReport)}
-              </div>
-            </CardContent>
-          </Card>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
@@ -461,7 +623,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="text-2xl font-bold">${analyticsData.summary.totalRevenue}</p>
+                    <p className="text-2xl font-bold">${analyticsData.summary.totalRevenue.toFixed(2)}</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-green-600" />
                 </div>
@@ -473,7 +635,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Avg Lead Value</p>
-                    <p className="text-2xl font-bold">${analyticsData.summary.averageLeadValue}</p>
+                    <p className="text-2xl font-bold">${analyticsData.summary.averageLeadValue.toFixed(2)}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-purple-600" />
                 </div>
@@ -493,6 +655,100 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
+          {/* Whole Team Performance */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Whole Team Performance
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const teamData = [analyticsData.teamPerformance];
+                    downloadTableAsExcel(teamData, 'team_performance');
+                  }}
+                  className="ml-auto flex items-center gap-1"
+                >
+                  <Download className="h-3 w-3" />
+                  Export
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {analyticsData.teamPerformance.totalLeads}
+                  </div>
+                  <div className="text-sm text-blue-600">Total Leads</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {analyticsData.teamPerformance.converted}
+                  </div>
+                  <div className="text-sm text-green-600">Converted (Product Purchased)</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {analyticsData.teamPerformance.followups}
+                  </div>
+                  <div className="text-sm text-purple-600">Follow-ups</div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {analyticsData.teamPerformance.salesPaymentDone}
+                  </div>
+                  <div className="text-sm text-orange-600">Sales Payment Done</div>
+                </div>
+                <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                  <div className="text-2xl font-bold text-indigo-600">
+                    ${analyticsData.teamPerformance.totalSalesPrice.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-indigo-600">Total Sales Price</div>
+                </div>
+                <div className="text-center p-4 bg-pink-50 rounded-lg">
+                  <div className="text-2xl font-bold text-pink-600">
+                    ${analyticsData.teamPerformance.totalCostPrice.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-pink-600">Total Cost Price</div>
+                </div>
+                <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                  <div className="text-2xl font-bold text-emerald-600">
+                    ${analyticsData.teamPerformance.totalMarginTentative.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-emerald-600">Total Margin Tentative</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Agent Performance - Product Purchased */}
+          {renderAgentPerformanceTable(
+            analyticsData.agentPerformanceProductPurchased, 
+            'Agent Performance (Product Purchased Only)',
+            'agent_performance_product_purchased',
+            true
+          )}
+          
+          {/* Agent Performance - Sale Payment Done - NEW TABLE */}
+          {renderAgentPerformanceTable(
+            analyticsData.agentPerformanceSalesPaymentDone, 
+            'Agent Performance (Sale Payment Done Only)',
+            'agent_performance_sales_payment_done',
+            true // Use the converted table layout
+          )}
+
+
+          {/* Agent Performance */}
+          {renderAgentPerformanceTable(
+            analyticsData.agentPerformance, 
+            'Agent Performance (All Status)',
+            'agent_performance_all_status',
+            false
+          )}
+
+          
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Status Distribution */}
@@ -553,292 +809,6 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          {/* Agent Performance */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Agent Performance (All Status)
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const tableData = analyticsData.agentPerformance.map(agent => ({
-                      'Agent Name': agent.agentName,
-                      'Total Leads': agent.totalLeads,
-                      'Follow-ups': agent.followups,
-                      'Sale Payment Done': agent.salePaymentDone,
-                      'Engines': agent.engines,
-                      'Transmissions': agent.transmissions,
-                      'Parts': agent.parts,
-                      'Total Pitched Product Price': agent.totalPitchedProductPrice,
-                      'Total Product Amount': agent.totalProductPrice,
-                      'Tentative Margin': agent.tentativeMargin
-                    }));
-                    downloadTableAsExcel(tableData, 'agent_performance_all_status');
-                  }}
-                  className="ml-auto flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Export
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Agent</th>
-                      <th className="text-left p-2">Total Leads</th>
-                      <th className="text-left p-2">Follow-ups</th>
-                      <th className="text-left p-2">Sale Payment Done</th>
-                      <th className="text-left p-2">Engines</th>
-                      <th className="text-left p-2">Transmissions</th>
-                      <th className="text-left p-2">Parts</th>
-                      <th className="text-left p-2">Total Pitched Price</th>
-                      <th className="text-left p-2">Total Product Amount</th>
-                      <th className="text-left p-2">Tentative Margin</th>
-                      <th className="text-left p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyticsData.agentPerformance.map((agent, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="p-2 font-medium">{agent.agentName}</td>
-                        <td className="p-2">{agent.totalLeads}</td>
-                        <td className="p-2">{agent.followups}</td>
-                        <td className="p-2">{agent.salePaymentDone}</td>
-                        <td className="p-2">{agent.engines}</td>
-                        <td className="p-2">{agent.transmissions}</td>
-                        <td className="p-2">{agent.parts}</td>
-                        <td className="p-2 font-semibold">${agent.totalPitchedProductPrice}</td>
-                        <td className="p-2">${agent.totalProductPrice}</td>
-                        <td className="p-2">
-                          <Badge className={agent.tentativeMargin >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                            ${agent.tentativeMargin}
-                          </Badge>
-                        </td>
-                        <td className="p-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownloadUserReport(agent.agentName)}
-                            className="flex items-center gap-1"
-                          >
-                            <Download className="h-3 w-3" />
-                            Report
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {/* Totals Row */}
-                    {(() => {
-                      const totals = calculateColumnTotals(analyticsData.agentPerformance, [
-                        'totalLeads', 'followups', 'salePaymentDone', 'engines', 'transmissions', 'parts',
-                        'totalPitchedProductPrice', 'totalProductPrice', 'tentativeMargin'
-                      ]);
-                      return (
-                        <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
-                          <td className="p-2">TOTAL</td>
-                          <td className="p-2">{totals.totalLeads}</td>
-                          <td className="p-2">{totals.followups}</td>
-                          <td className="p-2">{totals.salePaymentDone}</td>
-                          <td className="p-2">{totals.engines}</td>
-                          <td className="p-2">{totals.transmissions}</td>
-                          <td className="p-2">{totals.parts}</td>
-                          <td className="p-2">${totals.totalPitchedProductPrice}</td>
-                          <td className="p-2">${totals.totalProductPrice}</td>
-                          <td className="p-2">
-                            <Badge className={totals.tentativeMargin >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                              ${totals.tentativeMargin}
-                            </Badge>
-                          </td>
-                          <td className="p-2">-</td>
-                        </tr>
-                      );
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Agent Performance - Product Purchased */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Agent Performance (Product Purchased Only)
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const tableData = analyticsData.agentPerformanceProductPurchased.map(agent => ({
-                      'Agent Name': agent.agentName,
-                      'Total Leads': agent.totalLeads,
-                      'Converted': agent.converted,
-                      'Engines': agent.engines,
-                      'Transmissions': agent.transmissions,
-                      'Parts': agent.parts,
-                      'Total Sales Price': agent.totalSalesPrice,
-                      'Total Cost Price': agent.totalCostPrice,
-                      'Total Margin Tentative': agent.totalMarginTentative
-                    }));
-                    downloadTableAsExcel(tableData, 'agent_performance_product_purchased');
-                  }}
-                  className="ml-auto flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Export
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Agent</th>
-                      <th className="text-left p-2">Total Leads</th>
-                      <th className="text-left p-2">Converted</th>
-                      <th className="text-left p-2">Engines</th>
-                      <th className="text-left p-2">Transmissions</th>
-                      <th className="text-left p-2">Parts</th>
-                      <th className="text-left p-2">Total Sales Price</th>
-                      <th className="text-left p-2">Total Cost Price</th>
-                      <th className="text-left p-2">Total Margin</th>
-                      <th className="text-left p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyticsData.agentPerformanceProductPurchased.map((agent, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="p-2 font-medium">{agent.agentName}</td>
-                        <td className="p-2">{agent.totalLeads}</td>
-                        <td className="p-2">{agent.converted}</td>
-                        <td className="p-2">{agent.engines}</td>
-                        <td className="p-2">{agent.transmissions}</td>
-                        <td className="p-2">{agent.parts}</td>
-                        <td className="p-2 font-semibold">${agent.totalSalesPrice}</td>
-                        <td className="p-2">${agent.totalCostPrice}</td>
-                        <td className="p-2">
-                          <Badge className={agent.totalMarginTentative >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                            ${agent.totalMarginTentative}
-                          </Badge>
-                        </td>
-                        <td className="p-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownloadUserReport(agent.agentName)}
-                            className="flex items-center gap-1"
-                          >
-                            <Download className="h-3 w-3" />
-                            Report
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {/* Totals Row */}
-                    {(() => {
-                      const totals = calculateColumnTotals(analyticsData.agentPerformanceProductPurchased, [
-                        'totalLeads', 'converted', 'engines', 'transmissions', 'parts', 
-                        'totalSalesPrice', 'totalCostPrice', 'totalMarginTentative'
-                      ]);
-                      return (
-                        <tr className="border-t-2 border-gray-300 bg-gray-50 font-semibold">
-                          <td className="p-2">TOTAL</td>
-                          <td className="p-2">{totals.totalLeads}</td>
-                          <td className="p-2">{totals.converted}</td>
-                          <td className="p-2">{totals.engines}</td>
-                          <td className="p-2">{totals.transmissions}</td>
-                          <td className="p-2">{totals.parts}</td>
-                          <td className="p-2">${totals.totalSalesPrice}</td>
-                          <td className="p-2">${totals.totalCostPrice}</td>
-                          <td className="p-2">
-                            <Badge className={totals.totalMarginTentative >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                              ${totals.totalMarginTentative}
-                            </Badge>
-                          </td>
-                          <td className="p-2">-</td>
-                        </tr>
-                      );
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Whole Team Performance */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Whole Team Performance
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const teamData = [analyticsData.teamPerformance];
-                    downloadTableAsExcel(teamData, 'team_performance');
-                  }}
-                  className="ml-auto flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Export
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {analyticsData.teamPerformance.totalLeads}
-                  </div>
-                  <div className="text-sm text-blue-600">Total Leads</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {analyticsData.teamPerformance.converted}
-                  </div>
-                  <div className="text-sm text-green-600">Converted</div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {analyticsData.teamPerformance.followups}
-                  </div>
-                  <div className="text-sm text-purple-600">Follow-ups</div>
-                </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {analyticsData.teamPerformance.salesPaymentDone}
-                  </div>
-                  <div className="text-sm text-orange-600">Sales Payment Done</div>
-                </div>
-                <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                  <div className="text-2xl font-bold text-indigo-600">
-                    ${analyticsData.teamPerformance.totalSalesPrice}
-                  </div>
-                  <div className="text-sm text-indigo-600">Total Sales Price</div>
-                </div>
-                <div className="text-center p-4 bg-pink-50 rounded-lg">
-                  <div className="text-2xl font-bold text-pink-600">
-                    ${analyticsData.teamPerformance.totalCostPrice}
-                  </div>
-                  <div className="text-sm text-pink-600">Total Cost Price</div>
-                </div>
-                <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                  <div className="text-2xl font-bold text-emerald-600">
-                    ${analyticsData.teamPerformance.totalMarginTentative}
-                  </div>
-                  <div className="text-sm text-emerald-600">Total Margin Tentative</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Additional Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Payment Methods */}
@@ -863,7 +833,7 @@ export default function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="method" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value: number) => [value, 'Count']} />
                     <Bar dataKey="count" fill="#8884d8" name="Count" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -891,8 +861,8 @@ export default function AnalyticsPage() {
                   <BarChart data={analyticsData.productTypes}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="type" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis tickFormatter={(value: number) => `$${value.toFixed(0)}`} />
+                    <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']} />
                     <Bar dataKey="revenue" fill="#82ca9d" name="Revenue" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -967,25 +937,25 @@ export default function AnalyticsPage() {
 
     return `Daily Sales & Margin Update
 
-Target (${currentMonth}): $${report.monthlyTarget}
-Target /Day: $${report.dailyTarget}
-Target as on ${todayFormatted}: $${report.targetAsOfToday}
+    Target (${currentMonth}): $${report.monthlyTarget.toFixed(2)}
+    Target /Day: $${report.dailyTarget.toFixed(2)}
+    Target as on ${todayFormatted}: $${report.targetAsOfToday.toFixed(2)}
 
-Margin Achieved Till Date: $${report.marginAchievedTillDate}
-Deficit Till Date: $${deficitTillDate}
- 
-Day ${todayFormatted}
+    Margin Achieved Till Date: $${report.marginAchievedTillDate.toFixed(2)}
+    Deficit Till Date: $${deficitTillDate.toFixed(2)}
+    
+    Day ${todayFormatted}
 
-Calls: ${report.todayCalls} | Engines: ${report.todayEngines} | Parts: ${report.todayParts}
+    Calls: ${report.todayCalls} | Engines: ${report.todayEngines} | Parts: ${report.todayParts}
 
-Target Day: $${targetDay} 
-Achieved: $${report.todayAchieved}
-Balance: $${balanceAfterToday}
+    Target Day: $${targetDay.toFixed(2)} 
+    Achieved: $${report.todayAchieved.toFixed(2)}
+    Balance: $${balanceAfterToday.toFixed(2)}
 
-Tentative Sales (Follow-ups): ${report.tentativeFollowups}
-Total Sales: $${report.tentativeSales} | 
-Tentative Margin: $${report.tentativeMargin}
-Deficit After Tentative Margin: $${deficitAfterTentative} (↓${reductionPercentage}%)`;
+    Tentative Sales (Follow-ups): ${report.tentativeFollowups}
+    Total Sales: $${report.tentativeSales.toFixed(2)} | 
+    Tentative Margin: $${report.tentativeMargin.toFixed(2)}
+    Deficit After Tentative Margin: $${deficitAfterTentative.toFixed(2)} (↓${reductionPercentage}%)`;
   }
   async function handleDownloadUserReport(agentName: string) {
     try {
@@ -1006,7 +976,7 @@ Deficit After Tentative Margin: $${deficitAfterTentative} (↓${reductionPercent
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${agentName.replace(/\s+/g, '_')}_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.download = `${agentName.replace(/\s+/g, '_')}_report_${getISODateString(new Date())}.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);

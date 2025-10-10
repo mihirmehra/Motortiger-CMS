@@ -29,8 +29,10 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate') || new Date().toISOString().split('T')[0];
-    const endDate = searchParams.get('endDate') || new Date().toISOString().split('T')[0];
+    // Fixed the default date range to be robust if no params are provided
+    const todayISO = new Date().toISOString().split('T')[0];
+    const startDate = searchParams.get('startDate') || todayISO;
+    const endDate = searchParams.get('endDate') || todayISO;
     const userIds = searchParams.get('userIds')?.split(',') || [];
 
     const dateFilter = {
@@ -141,6 +143,7 @@ export async function GET(request: NextRequest) {
               'Incomplete Information',
               'Sourcing',
               'Sale Payment Done',
+              'Product Purchased' // Added Product Purchased to All Status list
             ]
           }
         }
@@ -338,7 +341,70 @@ export async function GET(request: NextRequest) {
       { $sort: { totalLeads: -1 } }
     ]);
 
+    // Agent Performance (Sale Payment Done Only) - NEW
+    const agentPerformanceSalesPaymentDone = await Lead.aggregate([
+      { 
+        $match: { 
+          ...baseFilter,
+          status: 'Sale Payment Done'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignedAgent',
+          foreignField: '_id',
+          as: 'agent'
+        }
+      },
+      { $unwind: '$agent' },
+      {
+        $group: {
+          _id: '$assignedAgent',
+          agentName: { $first: '$agent.name' },
+          totalLeads: { $sum: 1 },
+          converted: { $sum: 1 },
+          engines: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'engine'] }
+                }
+              }
+            }
+          },
+          transmissions: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'transmission'] }
+                }
+              }
+            }
+          },
+          parts: {
+            $sum: {
+              $size: {
+                $filter: {
+                  input: '$products',
+                  cond: { $eq: ['$$this.productType', 'part'] }
+                }
+              }
+            }
+          },
+          totalSalesPrice: { $sum: { $ifNull: ['$salesPrice', 0] } },
+          totalCostPrice: { $sum: { $ifNull: ['$costPrice', 0] } },
+          totalMarginTentative: { $sum: { $ifNull: ['$totalMargin', 0] } }
+        }
+      },
+      { $sort: { totalLeads: -1 } }
+    ]);
+
+
     // Team Performance
+
     const teamStats = await Lead.aggregate([
       { $match: baseFilter },
       {
@@ -364,9 +430,34 @@ export async function GET(request: NextRequest) {
               $cond: [{ $eq: ['$status', 'Sale Payment Done'] }, 1, 0]
             }
           },
-          totalSalesPrice: { $sum: { $ifNull: ['$salesPrice', 0] } },
-          totalCostPrice: { $sum: { $ifNull: ['$costPrice', 0] } },
-          totalMarginTentative: { $sum: { $ifNull: ['$totalMargin', 0] } }
+          // UPDATED: Only sum amounts if status is 'Product Purchased'
+          totalSalesPrice: {
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'Product Purchased'] },
+                { $ifNull: ['$salesPrice', 0] },
+                0
+              ]
+            }
+          },
+          totalCostPrice: {
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'Product Purchased'] },
+                { $ifNull: ['$costPrice', 0] },
+                0
+              ]
+            }
+          },
+          totalMarginTentative: {
+            $sum: {
+              $cond: [
+                { $eq: ['$status', 'Product Purchased'] },
+                { $ifNull: ['$totalMargin', 0] },
+                0
+              ]
+            }
+          }
         }
       }
     ]);
@@ -514,6 +605,7 @@ export async function GET(request: NextRequest) {
       monthlyTrends,
       agentPerformance,
       agentPerformanceProductPurchased,
+      agentPerformanceSalesPaymentDone, // ADDED
       teamPerformance,
       paymentMethods: paymentMethodsFormatted,
       productTypes: productTypesFormatted,
