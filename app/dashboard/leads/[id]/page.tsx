@@ -75,6 +75,7 @@ interface Lead {
       trackingNumber?: string;
       shippingCompany?: string;
       proofOfDelivery?: string;
+      productDeliveryStatus?: string;
     };
   }>;
   // Payment fields
@@ -667,6 +668,16 @@ export default function LeadDetailPage() {
                                   </label>
                                   <p className="text-sm">
                                     {product.vendorInfo.shippingCompany}
+                                  </p>
+                                </div>
+                              )}
+                              {product.vendorInfo.productDeliveryStatus && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-500">
+                                    Product Delivery Status
+                                  </label>
+                                  <p className="text-sm font-semibold">
+                                    {product.vendorInfo.productDeliveryStatus}
                                   </p>
                                 </div>
                               )}
