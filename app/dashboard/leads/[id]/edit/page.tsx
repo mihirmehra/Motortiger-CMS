@@ -47,6 +47,7 @@ interface Product {
     contactPerson: string;
     phone: string;
     email: string;
+    productDeliveryStatus: string;
   };
 }
 
@@ -170,6 +171,24 @@ export default function EditLeadPage() {
     'Product Purchased'
   ];
 
+  const PRODUCT_DELIVERY_STATUS_OPTIONS = [
+    'Order Placed',
+    'Engine Pull',
+    'Washing',
+    'Testing',
+    'Pack & Ready',
+    'Shipping',
+    'Delivered',
+    'Shipping Delayed',
+    'Not Delivered',
+    'Delivered to Wrong Address',
+    'Delivered Wrong Process',
+    'Delivery Rescheduled',
+    'Returned to Vendor',
+    'Cancelled',
+    'Refunded',
+  ] as const;
+
   const followupStatuses = ['Follow up', 'Desision Follow up', 'Payment Follow up'];
   const isFollowupStatus = followupStatuses.includes(formData.status);
 
@@ -282,6 +301,7 @@ export default function EditLeadPage() {
             contactPerson: product.vendorInfo?.contactPerson || '',
             phone: product.vendorInfo?.phone || '',
             email: product.vendorInfo?.email || '',
+            productDeliveryStatus: product.vendorInfo?.productDeliveryStatus || 'Order Placed',
           }
         })) || [{
           productId: generateProductId(),
@@ -311,6 +331,7 @@ export default function EditLeadPage() {
             contactPerson: '',
             phone: '',
             email: '',
+            productDeliveryStatus: '', 
           }
         }];
 
@@ -382,6 +403,7 @@ export default function EditLeadPage() {
         contactPerson: '',
         phone: '',
         email: '',
+        productDeliveryStatus: 'Order Placed',
     }}]);
   };
 
@@ -444,6 +466,7 @@ export default function EditLeadPage() {
           contactPerson: product.vendorInfo.contactPerson || undefined,
           phone: product.vendorInfo.phone || undefined,
           email: product.vendorInfo.email || undefined,
+          productDeliveryStatus: product.vendorInfo.productDeliveryStatus || 'Order Placed',
         }
       }));
       
@@ -1410,6 +1433,23 @@ export default function EditLeadPage() {
                             onChange={(e) => updateProduct(index, 'vendorInfo.shippingCompany', e.target.value)}
                             className="mt-1"
                           />
+                        </div>
+                          {/* --- NEW CODE: Product Delivery Status --- */}
+                        <div>
+                            <Label htmlFor={`productDeliveryStatus-${index}`}>Product Delivery Status</Label>
+                            <select
+                                id={`productDeliveryStatus-${index}`}
+                                name="productDeliveryStatus"
+                                className="block w-full rounded-md border border-gray-300 shadow-sm p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                                value={product.vendorInfo.productDeliveryStatus}
+                                onChange={(e) => updateProduct(index, 'vendorInfo.productDeliveryStatus', e.target.value)}
+                            >
+                                {PRODUCT_DELIVERY_STATUS_OPTIONS.map((status) => (
+                                    <option key={status} value={status}>
+                                        {status}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                           <Label htmlFor={`proofOfDelivery-${index}`}>Proof of Delivery</Label>

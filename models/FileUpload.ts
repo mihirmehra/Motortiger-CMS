@@ -35,7 +35,7 @@ const FileUploadSchema = new Schema<IFileUpload>(
   }
 );
 
-FileUploadSchema.index({ fileId: 1 });
+
 FileUploadSchema.index({ uploadedBy: 1 });
 FileUploadSchema.index({ module: 1, targetId: 1 });
 

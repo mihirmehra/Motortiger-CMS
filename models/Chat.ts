@@ -185,7 +185,6 @@ ChatSchema.pre('save', function (next) {
 });
 
 // Indexes for better performance
-ChatSchema.index({ chatId: 1 });
 ChatSchema.index({ participants: 1 });
 ChatSchema.index({ chatType: 1 });
 ChatSchema.index({ 'lastMessage.timestamp': -1 });

@@ -53,7 +53,7 @@ const FollowupSchema = new Schema<IFollowup>(
   }
 );
 
-FollowupSchema.index({ followupId: 1 });
+
 FollowupSchema.index({ leadId: 1 });
 FollowupSchema.index({ assignedAgent: 1 });
 FollowupSchema.index({ status: 1 });

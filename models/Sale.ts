@@ -71,7 +71,7 @@ SaleSchema.pre('save', function (next) {
   next();
 });
 
-SaleSchema.index({ saleId: 1 });
+
 SaleSchema.index({ leadId: 1 });
 SaleSchema.index({ status: 1 });
 SaleSchema.index({ assignedAgent: 1 });

@@ -115,7 +115,7 @@ PaymentRecordSchema.pre('save', function (next) {
   next();
 });
 
-PaymentRecordSchema.index({ paymentId: 1 });
+
 PaymentRecordSchema.index({ leadId: 1 });
 PaymentRecordSchema.index({ paymentStatus: 1 });
 PaymentRecordSchema.index({ paymentDate: -1 });

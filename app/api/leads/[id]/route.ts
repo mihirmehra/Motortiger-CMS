@@ -213,7 +213,7 @@ export async function PUT(
       for (const product of body.products) {
         if (
           product.vendorInfo &&
-          (product.vendorInfo.vendorName || product.vendorInfo.vendorLocation)
+          (product.vendorInfo.shopName || product.vendorInfo.address)
         ) {
           // Check if vendor order already exists for this product
           let existingOrder = await VendorOrder.findOne({
@@ -251,6 +251,7 @@ export async function PUT(
               trackingNumber: product.vendorInfo.trackingNumber,
               shippingCompany: product.vendorInfo.shippingCompany,
               proofOfDelivery: product.vendorInfo.proofOfDelivery,
+              productDeliveryStatus: product.vendorInfo.productDeliveryStatus || existingOrder.productDeliveryStatus,
               updatedBy: user.id,
             });
             await existingOrder.save();
@@ -290,6 +291,7 @@ export async function PUT(
               trackingNumber: product.vendorInfo.trackingNumber,
               shippingCompany: product.vendorInfo.shippingCompany,
               proofOfDelivery: product.vendorInfo.proofOfDelivery,
+              productDeliveryStatus: product.vendorInfo.productDeliveryStatus,
               shippingAddress: lead.shippingInfo?.fullAddress || lead.billingInfo?.fullAddress,
               createdBy: user.id,
               updatedBy: user.id,
@@ -345,8 +347,24 @@ export async function PUT(
       }
     }
 
-    // Update lead
-    Object.assign(lead, body);
+    // Ensure nested vendorInfo fields are preserved for products
+    if (body.products && Array.isArray(body.products)) {
+      // Merge products array directly to preserve nested objects and ensure vendorInfo defaults
+      lead.products = body.products.map((p: any) => ({
+        ...p,
+        vendorInfo: p.vendorInfo
+          ? {
+              ...p.vendorInfo,
+              productDeliveryStatus:
+                p.vendorInfo.productDeliveryStatus || 'Order Placed',
+            }
+          : undefined,
+      }));
+    }
+    // Copy other top-level fields
+    const topLevelFields = { ...body };
+    delete topLevelFields.products;
+    Object.assign(lead, topLevelFields);
     lead.updatedBy = user.id;
 
     // Add history entry
@@ -378,10 +396,17 @@ export async function PUT(
       userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
-    const updatedLead = await Lead.findById(lead._id)
-      .populate('assignedAgent', 'name email')
-      .populate('createdBy', 'name')
-      .populate('updatedBy', 'name');
+  const updatedLead = await Lead.findByIdAndUpdate(
+      params.id,
+      {
+      ...body, // Spreads all top-level fields
+      // Use the processed lead.products to ensure nested vendorInfo fields (like productDeliveryStatus) are preserved/defaulted
+      products: lead.products,
+          updatedBy: user.id,
+          updatedAt: new Date(),
+      },
+      { new: true, runValidators: true }
+  );
 
     return NextResponse.json({
       message: 'Lead updated successfully',

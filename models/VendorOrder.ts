@@ -141,7 +141,7 @@ VendorOrderSchema.pre('save', function (next) {
   next();
 });
 
-VendorOrderSchema.index({ orderNo: 1 });
+
 VendorOrderSchema.index({ vendorId: 1 });
 VendorOrderSchema.index({ orderStatus: 1 });
 VendorOrderSchema.index({ customerId: 1 });

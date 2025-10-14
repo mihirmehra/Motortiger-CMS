@@ -41,7 +41,7 @@ TargetSchema.pre('save', function (next) {
   next();
 });
 
-TargetSchema.index({ targetId: 1 });
+
 TargetSchema.index({ isActive: 1 });
 TargetSchema.index({ assignedUsers: 1 });
 

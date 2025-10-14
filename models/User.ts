@@ -39,7 +39,6 @@ const UserSchema = new Schema<IUser>({
   timestamps: true
 });
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1, isActive: 1 });
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

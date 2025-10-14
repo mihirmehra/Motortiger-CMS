@@ -75,7 +75,7 @@ const SMSSchema = new Schema<ISMS>(
   }
 );
 
-SMSSchema.index({ smsId: 1 });
+
 SMSSchema.index({ userId: 1 });
 SMSSchema.index({ messageType: 1 });
 SMSSchema.index({ status: 1 });
