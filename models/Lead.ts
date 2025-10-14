@@ -22,23 +22,6 @@ export type LeadStatus =
   | 'Sale Payment Done'
   | 'Product Purchased';
 
-export type ProductDeliveryStatus =
-  | 'Order Placed'
-  | 'Engine Pull'
-  | 'Washing'
-  | 'Testing'
-  | 'Pack & Ready'
-  | 'Shipping'
-  | 'Delivered'
-  | 'Shipping Delayed'
-  | 'Not Delivered'
-  | 'Delivered to Wrong Address'
-  | 'Delivered Wrong Process'
-  | 'Delivery Rescheduled'
-  | 'Returned to Vendor'
-  | 'Cancelled'
-  | 'Refunded';
-
 export interface IBillingInfo {
   firstName?: string;
   lastName?: string;
@@ -97,7 +80,6 @@ export interface ILeadProduct {
     contactPerson?: string;
     phone?: string;
     email?: string;
-    productDeliveryStatus?: ProductDeliveryStatus; // New field
   };
 }
 
