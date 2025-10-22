@@ -40,7 +40,7 @@ export const shippingInfoSchema = z.object({
 
 export const productSchema = z.object({
   productId: z.string().optional(),
-  productType: z.enum(['engine', 'transmission', 'part']),
+  productType: z.enum(['no-product', 'engine', 'transmission', 'part']),
   productName: z.string().min(1, 'Product name is required'),
   productAmount: z.number().optional(),
   pitchedProductPrice: z.number().optional(),
@@ -171,7 +171,7 @@ export const vendorOrderSchema = z.object({
     ])
     .optional(),
   customerName: z.string().optional(),
-  productType: z.enum(['engine', 'transmission', 'part']).optional(),
+  productType: z.enum(['no-product' ,'engine', 'transmission', 'part']).optional(),
   productName: z.string().optional(),
   productAmount: z.number().optional(),
   quantity: z.number().optional(),

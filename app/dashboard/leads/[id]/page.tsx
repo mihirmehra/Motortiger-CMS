@@ -53,7 +53,7 @@ interface Lead {
   };
   products: Array<{
     productId: string;
-    productType: 'engine' | 'transmission' | 'part';
+    productType: 'no-product' | 'engine' | 'transmission' | 'part' ;
     productName: string;
     pitchedProductPrice?: number;
     productAmount?: number;

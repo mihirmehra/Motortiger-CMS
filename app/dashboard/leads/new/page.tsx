@@ -21,7 +21,7 @@ interface User {
 
 interface Product {
   productId: string;
-  productType: 'engine' | 'transmission' | 'part';
+  productType: 'no-product' | 'engine' | 'transmission' | 'part';
   productName: string;
   productAmount: string;
   pitchedProductPrice: string;
@@ -112,7 +112,7 @@ export default function NewLeadPage() {
 
   const [products, setProducts] = useState<Product[]>([{
     productId: generateProductId(),
-    productType: 'engine',
+    productType: 'no-product',
     productName: '',
     productAmount: '',
     pitchedProductPrice: '',
@@ -223,7 +223,7 @@ export default function NewLeadPage() {
   const addProduct = () => {
     setProducts([...products, {
       productId: generateProductId(),
-      productType: 'engine',
+      productType: 'no-product',
       productName: '',
       productAmount: '',
       pitchedProductPrice: '',

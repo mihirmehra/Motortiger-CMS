@@ -70,6 +70,7 @@ export const POPULAR_MAKES = [
 ];
 
 export const PRODUCT_TYPES = [
+  { value: 'no-product', label: 'no-product' },
   { value: 'engine', label: 'Engine' },
   { value: 'transmission', label: 'Transmission' },
   { value: 'part', label: 'Part' },

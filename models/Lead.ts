@@ -63,7 +63,7 @@ export interface IShippingInfo {
 
 export interface ILeadProduct {
   productId: string;
-  productType: 'engine' | 'transmission' | 'part';
+  productType: 'no-product' | 'engine' | 'transmission' | 'part';
   productName: string;
   productAmount?: number;
   pitchedProductPrice?: number;
@@ -204,7 +204,7 @@ const LeadProductSchema = new Schema<ILeadProduct>({
   productId: { type: String, required: true },
   productType: {
     type: String,
-    enum: ['engine', 'transmission', 'part'],
+    enum: ['no-product', 'engine', 'transmission', 'part'],
     required: true,
   },
   productName: { type: String, required: true },

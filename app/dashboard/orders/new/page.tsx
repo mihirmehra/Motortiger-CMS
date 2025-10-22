@@ -36,7 +36,7 @@ export default function NewVendorOrderPage() {
     customerId: '',
     customerName: '',
     orderStatus: 'stage1 (engine pull)',
-    productType: 'engine',
+    productType: 'no-product',
     itemSubtotal: '',
     shippingHandling: '',
     taxCollected: '',

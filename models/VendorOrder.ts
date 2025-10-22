@@ -26,7 +26,7 @@ export interface IVendorOrder {
   grandTotal?: number;
   courierCompany?: string;
   trackingId?: string;
-  productType?: 'engine' | 'transmission' | 'part';
+  productType?: 'no-product' | 'engine' | 'transmission' | 'part';
   productName?: string;
   productAmount?: number;
   pitchedProductPrice?: number;
@@ -90,7 +90,7 @@ const VendorOrderSchema = new Schema<IVendorOrder>(
     grandTotal: Number,
     courierCompany: String,
     trackingId: String,
-    productType: { type: String, enum: ['engine', 'transmission', 'part'] },
+    productType: { type: String, enum: ['no-product', 'engine', 'transmission', 'part'] },
     productName: String,
     productAmount: Number,
     pitchedProductPrice: Number,
