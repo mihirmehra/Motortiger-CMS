@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Save, Plus, Trash2, Upload } from 'lucide-react';
+import { LeadTypeToggle } from '@/components/ui/lead-type-toggle';
 import { generateProductId } from '@/utils/idGenerator';
 import { US_STATES, COUNTRIES, YEARS, POPULAR_MAKES, PRODUCT_TYPES, PART_TYPES, ADDRESS_TYPES } from '@/utils/constants';
 
@@ -56,6 +57,8 @@ export default function NewLeadPage() {
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('sales');
+  type LeadType = 'Inbound call' | 'website';
+  
   const [formData, setFormData] = useState({
     customerName: '',
     description: '',
@@ -65,6 +68,7 @@ export default function NewLeadPage() {
     assignedAgent: '',
     status: 'Follow up',
     sameShippingInfo: false,
+    leadType: 'Inbound call' as LeadType,
   });
 
   const [billingInfo, setBillingInfo] = useState({
@@ -424,8 +428,20 @@ export default function NewLeadPage() {
             </Button>
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900">Create New Lead</h1>
-          <p className="text-gray-600">Add a new lead with multiple products to the system</p>
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Create New Lead</h1>
+              <p className="text-gray-600">Add a new lead with multiple products to the system</p>
+            </div>
+            <div>
+              <Label htmlFor="leadType" className='text-1xl font-bold text-gray-900'>Lead Type</Label>
+              <LeadTypeToggle
+                value={formData.leadType}
+                onChange={(value) => setFormData(prev => ({ ...prev, leadType: value }))}
+                className="mt-1 w-full justify-start px-3 text-left font-normal"
+              />
+            </div>
+          </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
             <TabsList className="grid w-full grid-cols-3">

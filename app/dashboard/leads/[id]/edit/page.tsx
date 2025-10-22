@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { LeadTypeToggle } from '@/components/ui/lead-type-toggle';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Save, Plus, Trash2, Upload } from 'lucide-react';
 import { generateProductId } from '@/utils/idGenerator';
@@ -66,6 +67,7 @@ interface Lead {
   billingInfo?: any;
   shippingInfo?: any;
   products: Product[];
+  leadType?: 'website' | 'Inbound call';
   // Payment fields
   modeOfPayment?: string;
   paymentPortal?: string;
@@ -103,6 +105,7 @@ export default function EditLeadPage() {
     assignedAgent: '',
     status: 'Follow up',
     sameShippingInfo: false,
+    leadType: 'website' as 'website' | 'Inbound call',
   });
   const [followupDateTime, setFollowupDateTime] = useState({
     date: '',
@@ -228,6 +231,7 @@ export default function EditLeadPage() {
           assignedAgent: lead.assignedAgent?._id || '',
           status: lead.status || 'Follow up',
           sameShippingInfo: lead.sameShippingInfo || false,
+          leadType: lead.leadType || 'website',
         });
         
         setBillingInfo(lead.billingInfo || {
@@ -582,9 +586,21 @@ export default function EditLeadPage() {
             </Button>
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900">Edit Lead</h1>
-          <p className="text-gray-600">Update lead information and details</p>
-          
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Edit Lead</h1>
+              <p className="text-gray-600">Update lead information and details</p>
+            </div>
+            <div>
+              <Label htmlFor="leadType" className='text-1xl font-bold text-gray-900'>Lead Type</Label>
+                <LeadTypeToggle
+                  value={formData.leadType}
+                  onChange={(value) => setFormData(prev => ({ ...prev, leadType: value }))}
+                  className="mt-1 w-full justify-start px-3 text-left font-normal"
+                />
+            </div>
+          </div>
+
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="sales">Sales (product + customer)</TabsTrigger>

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { LeadTypeToggle } from '@/components/ui/lead-type-toggle';
 import {
   ArrowLeft,
   Edit,
@@ -25,6 +26,7 @@ interface Lead {
   phoneNumber: string;
   alternateNumber?: string;
   status: string;
+  leadType?: 'website' | 'Inbound call';
   assignedAgent: {
     _id: string;
     name: string;
@@ -920,6 +922,16 @@ export default function LeadDetailPage() {
                 <CardTitle>Lead Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {lead.leadType && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Lead Type
+                    </label>
+                    <div className="mt-1">
+                      <LeadTypeToggle value={lead.leadType} onChange={() => {}} showBadge />
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium text-gray-500">
                     Lead ID

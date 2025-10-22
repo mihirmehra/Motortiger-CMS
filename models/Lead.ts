@@ -39,6 +39,9 @@ export type ProductDeliveryStatus =
   | 'Cancelled'
   | 'Refunded';
 
+// NEW TYPE
+export type LeadType = 'website' | 'Inbound call';
+
 export interface IBillingInfo {
   firstName?: string;
   lastName?: string;
@@ -104,6 +107,7 @@ export interface ILeadProduct {
 export interface ILead {
   leadId: string;
   leadNumber: string;
+  leadType: LeadType;
   date: Date;
   month: string;
   invoiceNo?: string;
@@ -248,6 +252,12 @@ const LeadSchema = new Schema(
   {
     leadId: { type: String, unique: true, required: true },
     leadNumber: { type: String, unique: true, required: true },
+    leadType: { 
+        type: String, 
+        enum: ['website', 'Inbound call'], 
+        default: 'Inbound call', // Default value set
+        required: true 
+    },
     date: { type: Date, default: Date.now },
     month: { type: String, required: true },
     invoiceNo: String,

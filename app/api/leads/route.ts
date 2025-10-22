@@ -283,6 +283,7 @@ export async function POST(request: NextRequest) {
       alternateNumber?: string;
       leadId: string;
       leadNumber: string;
+      leadType: string;
       month: string;
       assignedAgent: string;
       products: any[];
@@ -326,6 +327,7 @@ export async function POST(request: NextRequest) {
       alternateNumber: body.alternateNumber || undefined,
       leadId: generateUniqueId('LEAD_'),
       leadNumber: generateLeadNumber(),
+      leadType: body.leadType || 'Inbound call',
       month: new Date().toLocaleString('default', {
         month: 'long',
         year: 'numeric',

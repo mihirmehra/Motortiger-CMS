@@ -36,6 +36,7 @@ interface Lead {
   _id: string;
   leadId: string;
   leadNumber: string;
+  leadType: 'website' | 'Inbound call';
   customerName: string;
   description?: string;
   customerEmail: string;
@@ -617,6 +618,7 @@ export default function LeadsPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead>Products</TableHead>
                   <TableHead>Total Amount</TableHead>
+                  <TableHead>Lead Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Assigned Agent</TableHead>
                   <TableHead>Created</TableHead>
@@ -635,36 +637,44 @@ export default function LeadsPage() {
                       className="font-medium"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center gap-2">
-                        <span>{lead.leadNumber}</span>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/dashboard/leads/${lead._id}`)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/dashboard/leads/${lead._id}/edit`)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          {currentUser?.role === 'admin' && (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span>{lead.leadNumber}</span>
+                          <div className="flex gap-1">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(lead._id)}
-                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                              onClick={() => router.push(`/dashboard/leads/${lead._id}`)}
+                              className="h-6 w-6 p-0"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Eye className="h-3 w-3" />
                             </Button>
-                          )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push(`/dashboard/leads/${lead._id}/edit`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            {currentUser?.role === 'admin' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(lead._id)}
+                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                        <Badge 
+                          variant={lead.leadType === 'website' ? "destructive" : "default"}
+                          className="w-fit"
+                        >
+                          {lead.leadType}
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
