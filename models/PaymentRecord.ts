@@ -8,7 +8,7 @@ export interface IPaymentRecord extends Document {
   customerPhone?: string;
   customerEmail?: string;
   modeOfPayment: string;
-  paymentPortal?: 'EasyPayDirect' | 'Authorize.net' | 'Zelle' | '';
+  paymentPortal?: 'Stripe' | 'EasyPayDirect' | 'Authorize.net' | 'Zelle' | '';
   cardNumber?: string;
   expiry?: string;
   paymentDate: Date;
@@ -58,7 +58,7 @@ const PaymentRecordSchema = new Schema<IPaymentRecord>(
     },
     paymentPortal: { 
       type: String, 
-      enum: ['EasyPayDirect', 'Authorize.net', 'Zelle', ''],
+      enum: ['Stripe', 'EasyPayDirect', 'Authorize.net', 'Zelle', ''],
       default: ''
     },
     cardNumber: String,

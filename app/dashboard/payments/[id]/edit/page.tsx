@@ -39,7 +39,7 @@ export default function EditPaymentRecordPage() {
   const router = useRouter();
   const params = useParams();
 
-  const paymentPortalOptions = ['EasyPayDirect', 'Authorize.net'];
+  const paymentPortalOptions = ['Stripe', 'EasyPayDirect', 'Authorize.net'];
   const statusOptions = ['pending', 'completed', 'failed', 'refunded', 'disputed'];
 
   useEffect(() => {
