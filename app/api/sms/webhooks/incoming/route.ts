@@ -8,8 +8,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.formData();
     
-    // Log the entire received payload for debugging
-    console.log('Received webhook body:', Array.from(body.entries()));
+    // Enhanced logging for debugging
+    const payload = Object.fromEntries(body.entries());
+    console.log('Received SMS webhook payload:', JSON.stringify(payload, null, 2));
+    
+    // Validate required fields
+    const requiredFields = ['MessageSid', 'From', 'To', 'Body'];
+    const missingFields = requiredFields.filter(field => !body.get(field));
+    
+    if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
+      return NextResponse.json(
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { status: 400 }
+      );
+    }
     
     const messageSid = body.get('MessageSid') as string;
     const from = body.get('From') as string;
@@ -41,7 +54,7 @@ export async function POST(request: NextRequest) {
       fromNumber: from,
       toNumber: to,
       content: messageBody,
-      status: 'received',
+      status: body.get('SmsStatus') || 'received',
       sentAt: new Date(),
       leadId: lead?._id,
       customerName: lead?.customerName || '',

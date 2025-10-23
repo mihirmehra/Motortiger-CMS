@@ -23,9 +23,18 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
-
+    const includeAllInbound = searchParams.get('includeAllInbound') === 'true';
+    
     const skip = (page - 1) * limit;
     let filter: any = {};
+    
+    // Include all inbound messages regardless of status if flag is set
+    if (includeAllInbound) {
+      filter.$or = [
+        { messageType: 'inbound' },
+        { messageType: 'outbound', status: { $ne: 'failed' } }
+      ];
+    }
 
     // Role-based filtering
     if (user.role === 'agent') {
@@ -61,7 +70,10 @@ export async function GET(request: NextRequest) {
     const messages = await SMS.find(filter)
       .populate('userId', 'name email')
       .populate('leadId', 'leadNumber customerName')
-      .sort({ sentAt: -1 })
+      .sort({ 
+        messageType: -1, // 'inbound' comes before 'outbound'
+        sentAt: -1 
+      })
       .skip(skip)
       .limit(limit);
 

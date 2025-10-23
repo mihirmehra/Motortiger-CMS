@@ -80,7 +80,7 @@ const CallSchema = new Schema<ICall>(
   }
 );
 
-CallSchema.index({ callId: 1 });
+
 CallSchema.index({ userId: 1 });
 CallSchema.index({ callType: 1 });
 CallSchema.index({ status: 1 });

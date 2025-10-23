@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Phone, MessageSquare, Settings, BarChart3, PhoneCall, PhoneOff, Mic, MicOff, Volume2, VolumeX, Play, Pause, Download, Clock, User, Calendar, Search, Filter, Trash2, Eye, ArrowLeft, Backpack as Backspace } from 'lucide-react';
+import { Phone, MessageSquare, Settings, BarChart3, PhoneCall, PhoneOff, Mic, MicOff, Volume2, VolumeX, Play, Pause, Download, Clock, User, Calendar, Search, Filter, Trash2, Eye, ArrowLeft, Backpack as Backspace, AlertTriangle } from 'lucide-react';
 import PhoneDialer from '@/components/ui/phone-dialer';
 import SMSComposer from '@/components/ui/sms-composer';
 import CallControls from '@/components/ui/call-controls';
@@ -56,6 +56,7 @@ interface SMS {
   status: string;
   sentAt: string;
   customerName?: string;
+  messageSid?: string;
   userId: {
     name: string;
     email: string;
@@ -84,6 +85,8 @@ interface TelecomStats {
     delivered: number;
     failed: number;
     deliveryRate: number;
+    received: number;
+    receivedToday: number;
   };
 }
 
@@ -95,6 +98,7 @@ export default function PhoneSystemPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
   const [smsMessages, setSmsMessages] = useState<SMS[]>([]);
+  const [groupedSmsMessages, setGroupedSmsMessages] = useState<{ [key: string]: SMS[] }>({})
   const [stats, setStats] = useState<TelecomStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentCall, setCurrentCall] = useState<any>(null);
@@ -130,6 +134,9 @@ export default function PhoneSystemPage() {
 
   useEffect(() => {
     loadSMS();
+    // Set up auto-refresh every 30 seconds
+    const refreshInterval = setInterval(loadSMS, 30000);
+    return () => clearInterval(refreshInterval);
   }, [smsSearch, smsStatusFilter]);
 
   const loadData = async () => {
@@ -179,18 +186,56 @@ export default function PhoneSystemPage() {
     try {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams({
-        limit: '20',
+        limit: '50', // Increased limit to show more messages
+        includeAllInbound: 'true', // Include all inbound messages regardless of status
         ...(smsSearch && { search: smsSearch }),
         ...(smsStatusFilter && { status: smsStatusFilter })
       });
 
       const response = await fetch(`/api/sms?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache' // Prevent caching to always get fresh data
+        }
       });
 
       if (response.ok) {
         const data = await response.json();
-        setSmsMessages(data.messages);
+        // Enhanced sorting logic
+        const sortedMessages = [...data.messages].sort((a, b) => {
+          // First prioritize messages from today
+          const today = new Date().toDateString();
+          const aIsToday = new Date(a.sentAt).toDateString() === today;
+          const bIsToday = new Date(b.sentAt).toDateString() === today;
+          
+          if (aIsToday && !bIsToday) return -1;
+          if (!aIsToday && bIsToday) return 1;
+          
+          // Then prioritize inbound messages
+          if (a.messageType === 'inbound' && b.messageType !== 'inbound') return -1;
+          if (a.messageType !== 'inbound' && b.messageType === 'inbound') return 1;
+          
+          // Finally sort by date
+          return new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime();
+        });
+
+        // Group messages by date
+        const grouped = sortedMessages.reduce((groups: { [key: string]: SMS[] }, message) => {
+          const date = new Date(message.sentAt).toLocaleDateString();
+          if (!groups[date]) {
+            groups[date] = [];
+          }
+          groups[date].push(message);
+          return groups;
+        }, {});
+
+        setSmsMessages(sortedMessages);
+        setGroupedSmsMessages(grouped);
+
+        // Log the number of messages loaded
+        console.log(`Loaded ${sortedMessages.length} messages, ${
+          sortedMessages.filter(m => m.messageType === 'inbound').length
+        } inbound`);
       }
     } catch (error) {
       console.error('Failed to load SMS:', error);
@@ -385,11 +430,22 @@ export default function PhoneSystemPage() {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const getSMSStatusColor = (status: string) => {
+  const getSMSStatusColor = (status: string, messageType: 'inbound' | 'outbound') => {
+    // For failed messages, always use red regardless of type
+    if (status === 'failed') {
+      return 'bg-red-100 text-red-800 animate-pulse';
+    }
+
+    // For inbound messages
+    if (messageType === 'inbound') {
+      return status === 'received' 
+        ? 'bg-purple-100 text-purple-800'
+        : 'bg-purple-50 text-purple-600';
+    }
+
     const colors: { [key: string]: string } = {
       'delivered': 'bg-green-100 text-green-800',
       'sent': 'bg-blue-100 text-blue-800',
-      'failed': 'bg-red-100 text-red-800',
       'pending': 'bg-yellow-100 text-yellow-800',
       'received': 'bg-purple-100 text-purple-800'
     };
@@ -490,7 +546,7 @@ export default function PhoneSystemPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="softphone" className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
               Softphone
@@ -498,6 +554,10 @@ export default function PhoneSystemPage() {
             <TabsTrigger value="sms" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               SMS
+            </TabsTrigger>
+            <TabsTrigger value="received-sms" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-green-600" />
+              Received SMS
             </TabsTrigger>
             <TabsTrigger value="call-history" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -703,37 +763,92 @@ export default function PhoneSystemPage() {
               {/* Recent SMS */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Recent SMS
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Recent SMS
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        Today: {smsMessages.filter(sms => 
+                          new Date(sms.sentAt).toDateString() === new Date().toDateString()
+                        ).length}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        Total: {smsMessages.length}
+                      </Badge>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {smsMessages.slice(0, 10).map(sms => (
-                      <div key={sms._id} className="border rounded-lg p-3">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge className={getSMSStatusColor(sms.status)}>
-                              {sms.status}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {sms.messageType}
-                            </Badge>
+                  <div className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto px-2">
+                    {Object.entries(groupedSmsMessages).map(([date, messages]) => (
+                      <div key={date} className="space-y-3">
+                        <div className="sticky top-0 bg-white/90 backdrop-blur-sm py-2 z-10">
+                          <div className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(date).toLocaleDateString(undefined, { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(sms.sentAt).toLocaleString()}
-                          </span>
                         </div>
-                        <div className="text-sm">
-                          <p className="font-medium">
-                            {sms.messageType === 'outbound' ? 'To' : 'From'}: {sms.messageType === 'outbound' ? sms.toNumber : sms.fromNumber}
-                          </p>
-                          {sms.customerName && (
-                            <p className="text-gray-600">{sms.customerName}</p>
-                          )}
-                          <p className="mt-1 text-gray-700">{sms.content}</p>
-                        </div>
+                        {messages.map(sms => (
+                          <div key={sms._id} 
+                               className={`border rounded-lg p-3 transition-all duration-200 ${
+                                 sms.status === 'failed' ? 'border-red-200 bg-red-50' :
+                                 sms.messageType === 'inbound' ? 'border-purple-100 bg-purple-50/50' : ''
+                               }`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2">
+                                <Badge className={getSMSStatusColor(sms.status, sms.messageType)}>
+                                  {sms.status}
+                                </Badge>
+                                <Badge variant="outline" className={`text-xs ${
+                                  sms.messageType === 'inbound' ? 'border-purple-200 text-purple-700' : ''
+                                }`}>
+                                  {sms.messageType}
+                                </Badge>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xs font-medium text-gray-700">
+                                  {new Date(sms.sentAt).toLocaleTimeString()}
+                                </span>
+                                <div className="text-[10px] text-gray-500">
+                                  {new Date(sms.sentAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-sm">
+                              <div className="flex items-center justify-between">
+                                <p className="font-medium flex items-center gap-2">
+                                  <span>{sms.messageType === 'outbound' ? 'To' : 'From'}:</span>
+                                  <span className="font-mono">{sms.messageType === 'outbound' ? sms.toNumber : sms.fromNumber}</span>
+                                </p>
+                              </div>
+                              {sms.customerName && (
+                                <p className="text-gray-600 mt-1">
+                                  <User className="h-3 w-3 inline mr-1" />
+                                  {sms.customerName}
+                                </p>
+                              )}
+                              <div className={`mt-2 p-2 rounded-md ${
+                                sms.status === 'failed' ? 'bg-white/50' :
+                                sms.messageType === 'inbound' ? 'bg-white' : 'bg-gray-50'
+                              }`}>
+                                <p className="text-gray-700 whitespace-pre-wrap">{sms.content}</p>
+                              </div>
+                              {sms.status === 'failed' && (
+                                <p className="text-red-600 text-xs mt-2 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Message delivery failed. Click to retry sending.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
@@ -935,7 +1050,7 @@ export default function PhoneSystemPage() {
                       <div key={sms._id} className="border rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
-                            <Badge className={getSMSStatusColor(sms.status)}>
+                            <Badge className={getSMSStatusColor(sms.status, sms.messageType)}>
                               {sms.status}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
@@ -1119,6 +1234,136 @@ export default function PhoneSystemPage() {
           </TabsContent>
 
           {/* Call Recordings Tab */}
+          <TabsContent value="received-sms">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-green-600" />
+                    Received Messages
+                  </div>
+                  {stats && (
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="bg-green-50">
+                        {stats.sms.receivedToday} today
+                      </Badge>
+                      <Badge variant="outline" className="bg-blue-50">
+                        Total: {stats.sms.received}
+                      </Badge>
+                    </div>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Search and Filter */}
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          placeholder="Search received messages..."
+                          value={smsSearch}
+                          onChange={(e) => setSmsSearch(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <select
+                      value={smsStatusFilter}
+                      onChange={(e) => setSmsStatusFilter(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">All Status</option>
+                      <option value="received">Received</option>
+                      <option value="failed">Failed</option>
+                    </select>
+                  </div>
+
+                  {/* Messages List */}
+                  <div className="space-y-4">
+                    {smsMessages
+                      .filter(sms => sms.messageType === 'inbound')
+                      .map(sms => (
+                        <div key={sms._id} className="border rounded-lg p-4 bg-green-50/30">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="bg-green-100">
+                                  Incoming
+                                </Badge>
+                                <Badge className={getSMSStatusColor(sms.status, sms.messageType)}>
+                                  {sms.status}
+                                </Badge>
+                              </div>
+                              <p className="font-mono text-sm">{sms.fromNumber}</p>
+                              {sms.customerName && (
+                                <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                  <User className="h-3 w-3" />
+                                  {sms.customerName}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right text-sm">
+                              <p className="font-medium">{new Date(sms.sentAt).toLocaleDateString()}</p>
+                              <p className="text-gray-500">{new Date(sms.sentAt).toLocaleTimeString()}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-white rounded-lg p-3 mt-2">
+                            <p className="text-gray-800 whitespace-pre-wrap">{sms.content}</p>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+                            <div className="space-y-1">
+                              <p className="flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                SID: {sms.smsId || sms.messageSid || 'N/A'}
+                              </p>
+                              <p className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                Agent: {sms.userId.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7"
+                                onClick={() => {
+                                  setSmsRecipient(sms.fromNumber);
+                                  setActiveTab('sms');
+                                }}
+                              >
+                                Reply
+                              </Button>
+                              {sms.status === 'failed' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-red-600 border-red-200 hover:bg-red-50"
+                                >
+                                  Retry
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                    {smsMessages.filter(sms => sms.messageType === 'inbound').length === 0 && (
+                      <div className="text-center py-8">
+                        <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-500">No received messages</p>
+                        <p className="text-sm text-gray-400 mt-1">New messages will appear here</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="recordings">
             <Card>
               <CardHeader>
@@ -1241,7 +1486,7 @@ export default function PhoneSystemPage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 mt-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -1277,6 +1522,19 @@ export default function PhoneSystemPage() {
                     <p className="text-xs text-purple-600">{stats.sms.today} today</p>
                   </div>
                   <MessageSquare className="h-8 w-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Received SMS</p>
+                    <p className="text-2xl font-bold">{stats.sms.received}</p>
+                    <p className="text-xs text-green-600">{stats.sms.receivedToday} today</p>
+                  </div>
+                  <MessageSquare className="h-8 w-8 text-green-600" />
                 </div>
               </CardContent>
             </Card>
