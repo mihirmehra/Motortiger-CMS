@@ -292,13 +292,13 @@ export default function ChatPage() {
 
     setUploadingFile(true);
     try {
+      // Upload to Dropbox
       const formData = new FormData();
-      formData.append('files', file);
-      formData.append('module', 'chats');
-      formData.append('targetId', selectedChat?._id || '');
+      formData.append('file', file);
+      formData.append('chatId', selectedChat?._id || '');
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/dropbox/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -308,22 +308,26 @@ export default function ChatPage() {
 
       if (response.ok) {
         const data = await response.json();
-        const uploadedFile = data.files[0];
         
         await sendMessage(
           getFileMessageType(file.type),
-          `📎 ${uploadedFile.originalName}`,
+          `📎 ${data.fileName}`,
           {
-            fileUrl: uploadedFile.filePath,
-            fileName: uploadedFile.originalName
+            fileUrl: data.url,
+            fileName: data.fileName,
+            fileId: data.fileId,
+            fileSize: data.fileSize,
+            mimeType: data.mimeType
           }
         );
+
+        toast.success('File uploaded to Dropbox successfully');
       } else {
-        toast.error('Failed to upload file');
+        toast.error('Failed to upload file to Dropbox');
       }
     } catch (error) {
       console.error('File upload error:', error);
-      toast.error('Failed to upload file');
+      toast.error('Failed to upload file to Dropbox');
     } finally {
       setUploadingFile(false);
       setShowFileUpload(false);
@@ -1337,7 +1341,7 @@ export default function ChatPage() {
                       </Tooltip>
                     </TooltipProvider>
 
-                    <TooltipProvider>
+                    {/* <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -1399,7 +1403,7 @@ export default function ChatPage() {
                         </TooltipTrigger>
                         <TooltipContent>Schedule message</TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
+                    </TooltipProvider> */}
                   </div>
 
                   {/* Message Input */}
