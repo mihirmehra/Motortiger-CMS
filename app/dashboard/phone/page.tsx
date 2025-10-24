@@ -1320,10 +1320,10 @@ export default function PhoneSystemPage() {
                                 <MessageSquare className="h-3 w-3" />
                                 SID: {sms.smsId || sms.messageSid || 'N/A'}
                               </p>
-                              <p className="flex items-center gap-1">
+                              {/* <p className="flex items-center gap-1">
                                 <User className="h-3 w-3" />
                                 Agent: {sms.userId.name}
-                              </p>
+                              </p> */}
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
