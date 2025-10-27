@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/dbConfig"
 import SMS from "@/models/SMS"
+import SMSConversation from "@/models/SMSConversation"
+import SMSMessage from "@/models/SMSMessage"
 import Lead from "@/models/Lead"
 import { generateUniqueId } from "@/utils/idGenerator"
 
@@ -49,9 +51,8 @@ export async function POST(request: NextRequest) {
       content: messageBody,
       status: "received",
       sentAt: new Date(),
-      leadId: lead?._id || undefined, // Optional - only if lead exists
-      customerName: lead?.customerName || "", // Empty string if no lead
-      // userId is intentionally omitted - not required for inbound messages
+      leadId: lead?._id || undefined,
+      customerName: lead?.customerName || "",
       twilioMessageSid: messageSid,
       twilioStatus: "received",
       direction: "inbound",
@@ -63,8 +64,87 @@ export async function POST(request: NextRequest) {
 
     const sms = new SMS(smsData)
     await sms.save()
+    console.log("[v0] SMS saved to legacy model:", sms._id)
 
-    console.log("[v0] Incoming SMS processed successfully:", { from, to, messageSid, leadId: lead?._id })
+    let conversation = await SMSConversation.findOne({
+      phoneNumber: from,
+    })
+
+    if (!conversation) {
+      // Get first available agent
+      const User = (await import("@/models/User")).default
+      const firstAgent = await User.findOne({ role: "agent" }).lean()
+
+      if (firstAgent) {
+        // Normalize result: some mongoose typings/returns can be an array when using certain generics,
+        // so ensure we have a single document and safely access _id.
+        const agentDoc = Array.isArray(firstAgent) ? firstAgent[0] : firstAgent
+        const agentId = (agentDoc as any)?._id ?? null
+
+        conversation = new SMSConversation({
+          conversationId: generateUniqueId("CONV_"),
+          agentId: agentId,
+          phoneNumber: from,
+          customerName: lead?.customerName || "",
+          leadId: lead?._id || undefined,
+          status: "active",
+          messageCount: 1,
+          unreadCount: 1,
+          lastMessage: messageBody,
+          lastMessageAt: new Date(),
+        })
+        await conversation.save()
+        console.log("[v0] New conversation created:", conversation._id, "for phone:", from, "agent:", agentId)
+      } else {
+        console.error("[v0] No agent found to assign conversation")
+        // Create conversation without agent assignment for now
+        conversation = new SMSConversation({
+          conversationId: generateUniqueId("CONV_"),
+          agentId: null as any,
+          phoneNumber: from,
+          customerName: lead?.customerName || "",
+          leadId: lead?._id || undefined,
+          status: "active",
+          messageCount: 1,
+          unreadCount: 1,
+          lastMessage: messageBody,
+          lastMessageAt: new Date(),
+        })
+        await conversation.save()
+        console.log("[v0] Conversation created without agent assignment:", conversation._id)
+      }
+    } else {
+      // Update existing conversation
+      conversation.messageCount += 1
+      conversation.unreadCount += 1
+      conversation.lastMessage = messageBody
+      conversation.lastMessageAt = new Date()
+      await conversation.save()
+      console.log("[v0] Conversation updated:", conversation._id, "new message count:", conversation.messageCount)
+    }
+
+    if (conversation) {
+      const message = new SMSMessage({
+        messageId: generateUniqueId("MSG_"),
+        conversationId: conversation._id,
+        senderType: "customer",
+        phoneNumber: from,
+        content: messageBody,
+        status: "received",
+        twilioMessageSid: messageSid,
+        sentAt: new Date(),
+      })
+      await message.save()
+      console.log("[v0] Message saved to conversation:", message._id, "conversation:", conversation._id)
+    }
+
+    console.log("[v0] Incoming SMS processed successfully:", {
+      from,
+      to,
+      messageSid,
+      conversationId: conversation?._id,
+      messageId: conversation ? "saved" : "not saved",
+    })
 
     // Respond with TwiML to acknowledge receipt
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
