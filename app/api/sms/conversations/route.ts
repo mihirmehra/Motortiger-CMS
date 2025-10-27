@@ -26,8 +26,10 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
     const filter: any = {}
 
+    // This allows agents to see and respond to any incoming SMS conversation
     if (user.role === "agent") {
-      filter.agentId = user.id
+      // Agents can see all conversations, not just their assigned ones
+      // This ensures incoming SMS are visible to all agents
     }
 
     if (status) {

@@ -76,14 +76,9 @@ export async function POST(request: NextRequest) {
       const firstAgent = await User.findOne({ role: "agent" }).lean()
 
       if (firstAgent) {
-        // Normalize result: some mongoose typings/returns can be an array when using certain generics,
-        // so ensure we have a single document and safely access _id.
-        const agentDoc = Array.isArray(firstAgent) ? firstAgent[0] : firstAgent
-        const agentId = (agentDoc as any)?._id ?? null
-
         conversation = new SMSConversation({
           conversationId: generateUniqueId("CONV_"),
-          agentId: agentId,
+          agentId: firstAgent._id,
           phoneNumber: from,
           customerName: lead?.customerName || "",
           leadId: lead?._id || undefined,
@@ -94,7 +89,7 @@ export async function POST(request: NextRequest) {
           lastMessageAt: new Date(),
         })
         await conversation.save()
-        console.log("[v0] New conversation created:", conversation._id, "for phone:", from, "agent:", agentId)
+        console.log("[v0] New conversation created:", conversation._id, "for phone:", from, "agent:", firstAgent._id)
       } else {
         console.error("[v0] No agent found to assign conversation")
         // Create conversation without agent assignment for now
