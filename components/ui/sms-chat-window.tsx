@@ -105,7 +105,7 @@ export default function SMSChatWindow({ conversation, onClose, onUpdate }: SMSCh
     setUploading(true)
     try {
       const token = localStorage.getItem("token")
-      const uploadedFiles = []
+      const uploadedFiles: Array<{ url: string; type: "image" | "video" | "audio" | "document"; fileName: string }> = []
 
       for (const file of files) {
         // Validate file size
