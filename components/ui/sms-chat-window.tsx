@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Paperclip, FileText, X, AlertCircle, CheckCheck, Check, Clock } from "lucide-react"
+import { Send, Paperclip, FileText, X, AlertCircle, CheckCheck, Check, Clock, Loader } from "lucide-react"
 import { toast } from "sonner"
 
 interface Message {
@@ -49,9 +49,12 @@ interface SMSChatWindowProps {
 export default function SMSChatWindow({ conversation, onClose, onUpdate }: SMSChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [content, setContent] = useState("")
-  const [mediaUrls, setMediaUrls] = useState<string[]>([])
+  const [mediaUrls, setMediaUrls] = useState<
+    Array<{ url: string; type: "image" | "video" | "audio" | "document"; fileName: string }>
+  >([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [previewFiles, setPreviewFiles] = useState<File[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -97,21 +100,60 @@ export default function SMSChatWindow({ conversation, onClose, onUpdate }: SMSCh
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
 
-    // Validate file sizes (max 5MB per file)
-    const validFiles = files.filter((file) => {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} is too large (max 5MB)`)
-        return false
+    if (files.length === 0) return
+
+    setUploading(true)
+    try {
+      const token = localStorage.getItem("token")
+      const uploadedFiles = []
+
+      for (const file of files) {
+        // Validate file size
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} is too large (max 5MB)`)
+          continue
+        }
+
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("conversationId", conversation._id)
+
+        console.log("[v0] Uploading file to Dropbox:", file.name)
+
+        const response = await fetch("/api/sms/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          uploadedFiles.push({
+            url: data.url,
+            type: data.mediaType,
+            fileName: data.fileName,
+          })
+          console.log("[v0] File uploaded successfully:", data.fileName)
+        } else {
+          const error = await response.json()
+          toast.error(`Failed to upload ${file.name}: ${error.error}`)
+        }
       }
-      return true
-    })
 
-    setPreviewFiles(validFiles)
-
-    // In a real app, you'd upload to a storage service here
-    // For now, we'll use placeholder URLs
-    const urls = validFiles.map((file) => URL.createObjectURL(file))
-    setMediaUrls(urls)
+      if (uploadedFiles.length > 0) {
+        setMediaUrls((prev) => [...prev, ...uploadedFiles])
+        setPreviewFiles(files.slice(0, uploadedFiles.length))
+        toast.success(`${uploadedFiles.length} file(s) uploaded to Dropbox`)
+      }
+    } catch (error) {
+      console.error("[v0] File upload error:", error)
+      toast.error("Failed to upload files")
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
   }
 
   const removeMedia = (index: number) => {
@@ -152,7 +194,7 @@ export default function SMSChatWindow({ conversation, onClose, onUpdate }: SMSCh
         toast.error(data.error || "Failed to send message")
       }
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("[v0] Error sending message:", error)
       toast.error("Failed to send message")
     } finally {
       setSending(false)
@@ -311,7 +353,7 @@ export default function SMSChatWindow({ conversation, onClose, onUpdate }: SMSCh
               }
             }}
             placeholder="Type your message..."
-            disabled={sending}
+            disabled={sending || uploading}
             className="flex-1"
           />
           <input
@@ -322,18 +364,24 @@ export default function SMSChatWindow({ conversation, onClose, onUpdate }: SMSCh
             className="hidden"
             accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
           />
-          <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} disabled={sending}>
-            <Paperclip className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || uploading}
+            title="Upload files to Dropbox"
+          >
+            {uploading ? <Loader className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
           </Button>
           <Button
             onClick={sendMessage}
-            disabled={sending || (!content.trim() && mediaUrls.length === 0)}
+            disabled={sending || uploading || (!content.trim() && mediaUrls.length === 0)}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-xs text-gray-500">Shift + Enter for new line, Enter to send</p>
+        <p className="text-xs text-gray-500">Shift + Enter for new line, Enter to send • Files uploaded to Dropbox</p>
       </CardContent>
     </Card>
   )
