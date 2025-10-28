@@ -4,6 +4,7 @@ import SMS from "@/models/SMS"
 import SMSConversation from "@/models/SMSConversation"
 import SMSMessage from "@/models/SMSMessage"
 import Lead from "@/models/Lead"
+import User from "@/models/User"
 import { generateUniqueId } from "@/utils/idGenerator"
 
 export async function POST(request: NextRequest) {
@@ -71,14 +72,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!conversation) {
-      // Get first available agent
-      const User = (await import("@/models/User")).default
       const firstAgent = await User.findOne({ role: "agent" }).lean().exec()
 
       if (firstAgent && firstAgent._id) {
         conversation = new SMSConversation({
           conversationId: generateUniqueId("CONV_"),
-          agentId: firstAgent._id,
+          agentId: firstAgent._id as any,
           phoneNumber: from,
           customerName: lead?.customerName || "",
           leadId: lead?._id || undefined,
@@ -123,7 +122,7 @@ export async function POST(request: NextRequest) {
         messageId: generateUniqueId("MSG_"),
         conversationId: conversation._id,
         senderType: "customer",
-        phoneNumber: from,
+        phoneNumber: from, 
         content: messageBody,
         status: "received",
         twilioMessageSid: messageSid,
