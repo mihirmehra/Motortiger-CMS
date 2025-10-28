@@ -18,16 +18,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     await connectDB()
 
     const conversation = await SMSConversation.findById(params.id)
-      .populate("agentId", "name email")
       .populate("leadId", "customerName leadNumber")
 
     if (!conversation) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
-    }
-
-    // Verify user owns this conversation
-    if (conversation.agentId._id.toString() !== user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
     return NextResponse.json({ conversation })
@@ -56,11 +50,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const conversation = await SMSConversation.findById(params.id)
     if (!conversation) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
-    }
-
-    // Verify user owns this conversation
-    if (conversation.agentId.toString() !== user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
     if (status) conversation.status = status

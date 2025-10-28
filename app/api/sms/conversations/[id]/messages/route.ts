@@ -28,10 +28,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
     }
 
-    // Verify user owns this conversation
-    if (conversation.agentId.toString() !== user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-    }
 
     const { searchParams } = new URL(request.url)
     const page = Number.parseInt(searchParams.get("page") || "1")
@@ -95,11 +91,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const conversation = await SMSConversation.findById(params.id)
     if (!conversation) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
-    }
-
-    // Verify user owns this conversation
-    if (conversation.agentId.toString() !== user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
     const messageId = generateUniqueId("MSG_")

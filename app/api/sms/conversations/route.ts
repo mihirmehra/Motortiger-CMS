@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
     }
 
     const conversations = await SMSConversation.find(filter)
-      .populate("agentId", "name email")
       .populate("leadId", "customerName leadNumber")
       .sort({ lastMessageAt: -1 })
       .skip(skip)
