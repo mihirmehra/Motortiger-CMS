@@ -4,7 +4,6 @@ import SMS from "@/models/SMS"
 import SMSConversation from "@/models/SMSConversation"
 import SMSMessage from "@/models/SMSMessage"
 import Lead from "@/models/Lead"
-import User from "@/models/User"
 import { generateUniqueId } from "@/utils/idGenerator"
 
 export async function POST(request: NextRequest) {
@@ -72,41 +71,19 @@ export async function POST(request: NextRequest) {
     })
 
     if (!conversation) {
-      const firstAgent = await User.findOne({ role: "agent" }).lean().exec()
-
-      if (firstAgent && firstAgent._id) {
-        conversation = new SMSConversation({
-          conversationId: generateUniqueId("CONV_"),
-          agentId: firstAgent._id as any,
-          phoneNumber: from,
-          customerName: lead?.customerName || "",
-          leadId: lead?._id || undefined,
-          status: "active",
-          messageCount: 1,
-          unreadCount: 1,
-          lastMessage: messageBody,
-          lastMessageAt: new Date(),
-        })
-        await conversation.save()
-        console.log("[v0] New conversation created:", conversation._id, "for phone:", from, "agent:", firstAgent._id)
-      } else {
-        console.error("[v0] No agent found to assign conversation")
-        // Create conversation without agent assignment for now
-        conversation = new SMSConversation({
-          conversationId: generateUniqueId("CONV_"),
-          agentId: null as any,
-          phoneNumber: from,
-          customerName: lead?.customerName || "",
-          leadId: lead?._id || undefined,
-          status: "active",
-          messageCount: 1,
-          unreadCount: 1,
-          lastMessage: messageBody,
-          lastMessageAt: new Date(),
-        })
-        await conversation.save()
-        console.log("[v0] Conversation created without agent assignment:", conversation._id)
-      }
+      conversation = new SMSConversation({
+        conversationId: generateUniqueId("CONV_"),
+        phoneNumber: from,
+        customerName: lead?.customerName || "",
+        leadId: lead?._id || undefined,
+        status: "active",
+        messageCount: 1,
+        unreadCount: 1,
+        lastMessage: messageBody,
+        lastMessageAt: new Date(),
+      })
+      await conversation.save()
+      console.log("[v0] New conversation created:", conversation._id, "for phone:", from)
     } else {
       // Update existing conversation
       conversation.messageCount += 1
@@ -122,7 +99,7 @@ export async function POST(request: NextRequest) {
         messageId: generateUniqueId("MSG_"),
         conversationId: conversation._id,
         senderType: "customer",
-        phoneNumber: from, 
+        phoneNumber: from,
         content: messageBody,
         status: "received",
         twilioMessageSid: messageSid,

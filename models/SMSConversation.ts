@@ -2,7 +2,6 @@ import mongoose, { type Document, Schema, type Types } from "mongoose"
 
 export interface ISMSConversation extends Document {
   conversationId: string
-  agentId: Types.ObjectId
   phoneNumber: string
   customerName?: string
   leadId?: Types.ObjectId
@@ -20,7 +19,6 @@ export interface ISMSConversation extends Document {
 const SMSConversationSchema = new Schema<ISMSConversation>(
   {
     conversationId: { type: String, unique: true, required: true },
-    agentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     phoneNumber: { type: String, required: true },
     customerName: String,
     leadId: { type: Schema.Types.ObjectId, ref: "Lead" },
@@ -41,7 +39,6 @@ const SMSConversationSchema = new Schema<ISMSConversation>(
   },
 )
 
-SMSConversationSchema.index({ agentId: 1, status: 1 })
 SMSConversationSchema.index({ phoneNumber: 1 })
 SMSConversationSchema.index({ lastMessageAt: -1 })
 SMSConversationSchema.index({ leadId: 1 })

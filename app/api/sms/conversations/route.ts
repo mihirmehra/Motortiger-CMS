@@ -26,12 +26,6 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
     const filter: any = {}
 
-    // This allows agents to see and respond to any incoming SMS conversation
-    if (user.role === "agent") {
-      // Agents can see all conversations, not just their assigned ones
-      // This ensures incoming SMS are visible to all agents
-    }
-
     if (status) {
       filter.status = status
     }
@@ -53,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const total = await SMSConversation.countDocuments(filter)
 
-    console.log("[v0] Fetched conversations:", conversations.length, "for user:", user.id, "role:", user.role)
+    console.log("[v0] Fetched conversations:", conversations.length, "for user:", user.id)
 
     return NextResponse.json({
       conversations,
@@ -90,9 +84,7 @@ export async function POST(request: NextRequest) {
 
     await connectDB()
 
-    // Check if conversation already exists
     let conversation = await SMSConversation.findOne({
-      agentId: user.id,
       phoneNumber,
     })
 
@@ -106,7 +98,6 @@ export async function POST(request: NextRequest) {
 
     conversation = new SMSConversation({
       conversationId,
-      agentId: user.id,
       phoneNumber,
       customerName: customerName || "",
       leadId: leadId || undefined,
