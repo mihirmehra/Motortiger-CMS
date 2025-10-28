@@ -73,9 +73,9 @@ export async function POST(request: NextRequest) {
     if (!conversation) {
       // Get first available agent
       const User = (await import("@/models/User")).default
-      const firstAgent = await User.findOne({ role: "agent" }).lean()
+      const firstAgent = await User.findOne({ role: "agent" }).lean().exec()
 
-      if (firstAgent) {
+      if (firstAgent && firstAgent._id) {
         conversation = new SMSConversation({
           conversationId: generateUniqueId("CONV_"),
           agentId: firstAgent._id,
